@@ -1,0 +1,2 @@
+dependency_overrides:
+  google_maps_flutter: ^2.5.0

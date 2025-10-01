@@ -1,0 +1,42 @@
+name: smart_parking_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+
+  cloud_firestore: ^4.5.0
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  qr_flutter: ^4.0.0
+  uuid: ^3.0.7
+  intl: ^0.20.2
+  image_picker: ^1.0.7
+  shared_preferences: ^2.5.3
+  http: ^1.2.0
+  provider: ^6.0.5  # Add for state management
+  flutter_secure_storage: ^8.0.0  # For secure token storage
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.19.6
+  pdf: ^3.10.7
+  printing: ^5.12.0
+  universal_html: ^2.2.4
+  url_launcher: ^6.3.2
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  flutter_local_notifications: ^17.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/images/  # Add this if you have images
