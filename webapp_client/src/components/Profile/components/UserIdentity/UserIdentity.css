@@ -1,0 +1,19 @@
+.user-identity {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.user-identity h2 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin: 0 0 5px 0;
+  font-weight: 600;
+}
+
+.user-role {
+  color: #7f8c8d;
+  font-size: 16px;
+  margin: 0;
+  font-style: italic;
+}

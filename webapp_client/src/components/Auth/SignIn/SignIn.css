@@ -1,0 +1,16 @@
+/* SignIn specific styles */
+.forgot-password-link {
+  text-align: right;
+  margin: -10px 0 10px 0;
+}
+
+.forgot-password-link a {
+  color: rgb(14, 26, 85);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.forgot-password-link a:hover {
+  text-decoration: underline;
+}

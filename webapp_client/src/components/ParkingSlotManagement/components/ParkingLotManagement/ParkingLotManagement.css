@@ -1,0 +1,194 @@
+.parking-lot-management {
+  margin-bottom: 30px;
+}
+
+.operation-mode-indicator {
+  margin-bottom: 20px;
+}
+
+.mode-indicator {
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.mode-indicator.edit-mode {
+  background-color: #e8f4fd;
+  color: #0a58ca;
+  border: 1px solid #0a58ca;
+}
+
+.mode-indicator.delete-mode {
+  background-color: #f8d7da;
+  color: #b02a37;
+  border: 1px solid #b02a37;
+}
+
+.edit-mode-active {
+  background-color: #0a58ca;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.delete-mode-active {
+  background-color: #b02a37;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.location-section {
+  margin-bottom: 30px;
+}
+
+.location-section h3 {
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.parking-lot {
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: white;
+}
+
+.parking-lot-header {
+  margin-bottom: 15px;
+}
+
+.parking-lot-header h4 {
+  margin: 0;
+  color: #4a5568;
+}
+
+.parking-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.parking-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.parking-slot {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #cbd5e0;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.parking-slot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.parking-slot.operation-mode {
+  border-width: 3px;
+}
+
+.parking-slot.operation-mode:hover {
+  transform: scale(1.05);
+}
+
+.slot-number {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.slot-status {
+  font-size: 12px;
+  text-align: center;
+  padding: 2px 5px;
+  border-radius: 10px;
+  margin-top: 5px;
+}
+
+.slot-operation-hint {
+  font-size: 10px;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* Status colors */
+.status-available {
+  background-color: #c6f6d5;
+  color: #22543d;
+  border-color: #38a169;
+}
+
+.status-occupied {
+  background-color: #fed7d7;
+  color: #742a2a;
+  border-color: #e53e3e;
+}
+
+.status-maintenance {
+  background-color: #feebcb;
+  color: #744210;
+  border-color: #ed8936;
+}
+
+.status-reserved {
+  background-color: #e9d8fd;
+  color: #44337a;
+  border-color: #805ad5;
+}
+
+@media (max-width: 900px) {
+  .parking-slot {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .slot-number {
+    font-size: 14px;
+  }
+  
+  .slot-status {
+    font-size: 10px;
+  }
+  
+  .slot-operation-hint {
+    font-size: 8px;
+  }
+  
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .action-buttons button {
+    margin-bottom: 5px;
+  }
+}

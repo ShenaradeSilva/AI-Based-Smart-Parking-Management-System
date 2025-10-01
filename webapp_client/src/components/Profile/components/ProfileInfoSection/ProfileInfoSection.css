@@ -1,0 +1,227 @@
+.profile-info-section {
+  flex: 1;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px; /* slightly bigger gap for spacing */
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0; /* increased padding */
+  border-bottom: 1px solid #f8f9fa;
+  position: relative;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: #34495e;
+  font-size: 16px; /* increased font size */
+  margin-bottom: 10px;
+}
+
+.info-value {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 17px;
+  padding: 10px 0;
+}
+
+/* General input fields */
+.info-item input {
+  padding: 16px 18px; /* taller input */
+  border: 2px solid #e1e5eb;
+  border-radius: 10px; /* slightly bigger radius */
+  font-size: 17px; /* larger text */
+  width: 100%;
+  max-width: 400px; /* increased width */
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.info-item input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Container for password input with toggle button */
+.password-input-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px; /* increased max width */
+}
+
+/* Password input field */
+.password-input {
+  width: 100%;
+  padding: 16px 50px 16px 18px; /* extra padding for icon */
+  border: 2px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 17px;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+.password-input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Password toggle button */
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #333;
+  background-color: #f0f0f0;
+}
+
+/* Mobile input wrapper */
+.mobile-input-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px; /* more spacing */
+  width: 100%;
+  max-width: 400px; /* increased width */
+}
+
+.country-code-container {
+  flex-shrink: 0;
+}
+
+.country-code-select {
+  height: 50px; /* taller */
+  padding: 0 10px;
+  border: 2px solid #e1e5eb;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  font-size: 17px;
+  transition: all 0.3s ease;
+}
+
+.country-code-select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+}
+
+.mobile-number-container {
+  flex-grow: 1;
+}
+
+.mobile-number-input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 2px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 17px;
+  background-color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+.mobile-number-input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Success message styling */
+.success-message {
+  display: flex;
+  align-items: center;
+  color: #28a745;
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+.success-icon {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Error Styling */
+input.error,
+select.error {
+  border-color: #e74c3c !important;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 6px;
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+input.error:focus,
+select.error:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
+}
+
+/* Password display */
+.password-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.password-updated-indicator {
+  display: flex;
+  align-items: center;
+  color: #28a745;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .info-item input,
+  .password-input-container,
+  .mobile-input-wrapper,
+  .country-code-select,
+  .mobile-number-input {
+    max-width: 100%;
+  }
+
+  .mobile-input-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

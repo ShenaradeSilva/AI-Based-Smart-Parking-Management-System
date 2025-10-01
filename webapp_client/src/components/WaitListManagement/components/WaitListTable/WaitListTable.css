@@ -1,0 +1,107 @@
+.waitlist-queue {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.waitlist-queue h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.waitlist-table {
+  width: 100%;
+  table-layout: fixed; /* forces columns to respect width */
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.waitlist-table th,
+.waitlist-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+  word-wrap: break-word;
+  text-align: center; /* center text by default */
+}
+
+.waitlist-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.waitlist-table th.actions,
+.waitlist-table td.actions-cell {
+  width: 200px; /* fixed width for action buttons column */
+  min-width: 180px;
+}
+
+.status-cell .status,
+.priority-cell .priority-badge {
+  display: inline-block;
+  min-width: 60px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.status.pending { background-color: #f57c00; color: #fff; }
+.status.notified { background-color: #1976d2; color: #fff; }
+.status.converted,
+.status.booked { background-color: #388e3c; color: #fff; }
+
+.priority-badge.high { background-color: #ffebee; color: #d32f2f; }
+.priority-badge.medium { background-color: #fff8e1; color: #ffa000; }
+.priority-badge.normal { background-color: #e8f5e9; color: #388e3c; }
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap; /* wraps buttons if too wide */
+}
+
+.btn-notify,
+.btn-remove {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-notify {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+}
+
+.btn-notify:disabled {
+  background-color: #90caf9;
+  cursor: not-allowed;
+}
+
+.btn-remove {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+@media (max-width: 768px) {
+  .waitlist-table {
+    display: block;
+    overflow-x: auto;
+  }
+  .action-buttons {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

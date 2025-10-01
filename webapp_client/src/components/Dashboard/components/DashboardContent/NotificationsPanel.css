@@ -1,0 +1,59 @@
+.notifications-panel {
+  background-color: white;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.notifications-panel h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.notifications-panel ul {
+  list-style: none;
+  padding: 0;
+}
+
+.notification {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.notification-content {
+  display: flex;
+  justify-content: space-between;
+}
+
+.notification-text {
+  flex: 1;
+  margin-right: 10px;
+  font-weight: normal;
+}
+
+.time {
+  color: #7f8c8d;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.notification.security {
+  background-color: #ffeaa7;
+  border-left: 4px solid #fdcb6e;
+}
+
+.notification.success {
+  background-color: #d1f7c4;
+  border-left: 4px solid #27ae60;
+}
+
+.notification.pending {
+  background-color: #ffd8e4;
+  border-left: 4px solid #fd79a8;
+}
+
+.notification.detection {
+  background-color: #d8f1ff;
+  border-left: 4px solid #79c6fd;
+}

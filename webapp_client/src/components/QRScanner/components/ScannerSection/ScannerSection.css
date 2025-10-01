@@ -1,0 +1,124 @@
+.scanner-section {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 500px;
+  justify-content: center;
+}
+
+.scanner-frame-large {
+  width: 400px;
+  height: 400px;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 0 0 2px #007bff;
+}
+
+.scanner-video-large {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.scan-instruction {
+  color: #666;
+  font-style: italic;
+  margin: 15px 0 20px;
+  text-align: center;
+}
+
+.scanner-controls {
+  margin-top: 15px;
+}
+
+.scan-cancelled, .scan-complete-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.scan-success-icon {
+  font-size: 60px;
+  color: #28a745;
+  margin-bottom: 15px;
+}
+
+.permission-error {
+  text-align: center;
+  padding: 30px 20px;
+  background: #fff4f4;
+  border-radius: 8px;
+  border: 1px solid #ffcccc;
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.error-icon svg {
+  width: 48px;
+  height: 48px;
+  color: #dc3545;
+}
+
+.permission-error h3 {
+  color: #d9534f;
+  margin-bottom: 15px;
+}
+
+.permission-error p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background: #0069d9;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 900px) {
+  .scanner-frame-large {
+    width: 300px;
+    height: 300px;
+  }
+}

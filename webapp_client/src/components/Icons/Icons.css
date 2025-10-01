@@ -1,0 +1,223 @@
+/* Icons.css */
+.icon {
+    fill: currentColor;
+    transition: all 0.3s ease;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Close Icon */
+.close-icon {
+    width: 16px;
+    height: 16px;
+    color: rgb(14, 26, 85);
+}
+
+.close-icon:hover {
+    color: rgb(41, 128, 185);
+    transform: rotate(90deg);
+}
+
+/* Notification Icon */
+.notification-icon {
+    width: 16px;
+    height: 16px;
+    color: rgb(14, 26, 85);
+}
+
+.notification-icon:hover {
+    color: rgb(41, 128, 185);
+}
+
+/* Profile Icon */
+.profile-icon {
+    width: 20px;
+    height: 20px;
+    color: rgb(14, 26, 85);
+}
+
+.profile-icon:hover {
+    color: rgb(41, 128, 185);
+}
+
+/* Dropdown Arrow */
+.dropdown-arrow {
+    width: 12px;
+    height: 12px;
+    color: rgb(14, 26, 85);
+    transition: transform 0.3s ease;
+}
+
+.dropdown-arrow.open {
+    transform: rotate(180deg);
+}
+
+.dropdown-arrow:hover {
+    color: rgb(41, 128, 185);
+}
+
+/* Warning Icon */
+.warning-icon {
+    width: 16px;
+    height: 16px;
+    color: #e74c3c;
+}
+
+.warning-icon:hover {
+    color: #c0392b;
+}
+
+/* Back Arrow */
+.back-arrow {
+    width: 16px;
+    height: 16px;
+    color: rgb(14, 26, 85);
+}
+
+.back-arrow:hover {
+    color: rgb(41, 128, 185);
+    transform: translateX(-2px);
+}
+
+/* Add Icon */
+.add-icon {
+    width: 16px;
+    height: 16px;
+    color: #27ae60;
+}
+
+.add-icon:hover {
+    color: #229954;
+    transform: scale(1.1);
+}
+
+/* Edit Icon */
+.edit-icon {
+    width: 16px;
+    height: 16px;
+    color: #f39c12;
+}
+
+.edit-icon:hover {
+    color: #e67e22;
+    transform: scale(1.1);
+}
+
+/* Delete Icon */
+.delete-icon {
+    width: 16px;
+    height: 16px;
+    color: #e74c3c;
+}
+
+.delete-icon:hover {
+    color: #c0392b;
+    transform: scale(1.1);
+}
+
+/* Mark Icon */
+.mark-icon {
+    width: 16px;
+    height: 16px;
+    color: #27ae60;
+}
+
+.mark-icon:hover {
+    color: #229954;
+}
+
+/* Optimise Icon */
+.optimise-icon {
+    width: 16px;
+    height: 16px;
+    color: #9b59b6;
+}
+
+.optimise-icon:hover {
+    color: #8e44ad;
+    transform: rotate(45deg);
+}
+
+/* Export Icon */
+.export-icon {
+    width: 16px;
+    height: 16px;
+    color: #3498db;
+}
+
+.export-icon:hover {
+    color: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* Notify Icon */
+.notify-icon {
+    width: 16px;
+    height: 16px;
+    color: #f39c12;
+}
+
+.notify-icon:hover {
+    color: #e67e22;
+}
+
+/* Approve Icon */
+.approve-icon {
+    width: 16px;
+    height: 16px;
+    color: #27ae60;
+}
+
+.approve-icon:hover {
+    color: #229954;
+    transform: scale(1.1);
+}
+
+/* Reject Icon */
+.reject-icon {
+    width: 16px;
+    height: 16px;
+    color: #e74c3c;
+}
+
+.reject-icon:hover {
+    color: #c0392b;
+    transform: scale(1.1);
+}
+
+/* Upload Pic Icon */
+.upload-pic-icon {
+    width: 16px;
+    height: 16px;
+    color: #3498db;
+}
+
+.upload-pic-icon:hover {
+    color: #2980b9;
+    transform: scale(1.1);
+}
+
+/* Responsive icon sizes */
+@media (max-width: 768px) {
+    .icon {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .profile-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .profile-icon {
+        width: 16px;
+        height: 16px;
+    }
+}

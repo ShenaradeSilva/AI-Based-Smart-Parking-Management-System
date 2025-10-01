@@ -1,0 +1,134 @@
+.hero-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  width: 99.9%;
+}
+
+.hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.hero-header .hero-text h1 {
+  color: rgb(44, 62, 80);
+  font-size: 60px;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.hero-header .hero-text p {
+  color: rgb(127, 140, 141);
+  font-size: 22px;
+}
+
+.image-frame {
+  width: 100%;
+  max-width: 900px;  /* optional, adjust to your layout */
+  margin: 20px auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.image-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.center-buttons {
+  justify-content: center;
+  margin-top: 50px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-btn {
+  padding: 20px 40px;       /* increased from 10px 20px */
+  border: 1px solid rgb(14, 26, 85);
+  background: transparent;
+  color: rgb(14, 26, 85);
+  border-radius: 6px;       /* slightly larger radius for better look */
+  font-weight: 700;          /* bolder text */
+  font-size: 18px;           /* increased font size */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.nav-btn.primary {
+  background: rgb(14, 26, 85);
+  color: white;
+}
+
+.nav-btn:hover {
+  background: rgba(14, 26, 85, 0.75);
+  color: white;
+}
+
+.nav-btn.primary:hover {
+  background: rgb(14, 26, 85, 0.5);
+  border-color: rgb(14, 26, 85);
+  color: rgb(14, 26, 85);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .hero-header {
+    gap: 40px;
+  }
+
+  .hero-header .hero-text h1 {
+    font-size: 40px;
+  }
+
+  .hero-header .hero-text p {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-card {
+    padding: 20px 15px;
+  }
+
+  .hero-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .hero-header .hero-text h1 {
+    font-size: 28px;
+  }
+
+  .hero-header .hero-text p {
+    font-size: 16px;
+  }
+
+  .center-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-card {
+    padding: 15px 10px;
+  }
+
+  .hero-header .hero-text h1 {
+    font-size: 22px;
+  }
+
+  .hero-header .hero-text p {
+    font-size: 14px;
+  }
+}

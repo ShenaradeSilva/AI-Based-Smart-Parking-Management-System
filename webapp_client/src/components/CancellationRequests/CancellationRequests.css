@@ -1,0 +1,27 @@
+.cancellation-requests {
+  padding: 20px;
+}
+
+.requests-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.pending-requests-section h2 {
+  color: #444;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .cancellation-requests {
+    padding: 15px;
+  }
+  
+  .requests-content {
+    gap: 20px;
+  }
+}

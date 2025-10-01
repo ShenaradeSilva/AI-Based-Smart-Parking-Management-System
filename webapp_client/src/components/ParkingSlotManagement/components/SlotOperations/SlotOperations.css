@@ -1,0 +1,104 @@
+.slot-operations {
+  margin-bottom: 30px;
+}
+
+.operations-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.operations-selector button {
+  padding: 10px 15px;
+  border: 1px solid #cbd5e0;
+  background-color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.operations-selector button.active {
+  background-color: #4299e1;
+  color: white;
+  border-color: #4299e1;
+}
+
+.operations-selector button:hover:not(.active) {
+  background-color: #edf2f7;
+}
+
+.operation-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.operation-content p {
+  margin-top: 0;
+  color: #4a5568;
+}
+
+.maintenance-selector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.maintenance-selector select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  min-width: 200px;
+}
+
+.operation-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.operation-button.primary {
+  background-color: #4299e1;
+  color: white;
+}
+
+.operation-button.primary:hover {
+  background-color: #3182ce;
+}
+
+.operation-button:disabled {
+  background-color: #cbd5e0;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .operations-selector {
+    flex-direction: column;
+  }
+  
+  .operations-selector button {
+    width: 100%;
+  }
+  
+  .maintenance-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .maintenance-selector select {
+    width: 100%;
+  }
+}

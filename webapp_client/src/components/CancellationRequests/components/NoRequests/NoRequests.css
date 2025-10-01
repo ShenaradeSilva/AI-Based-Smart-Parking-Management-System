@@ -1,0 +1,9 @@
+.no-requests {
+  text-align: center;
+  padding: 30px;
+  color: #888;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}

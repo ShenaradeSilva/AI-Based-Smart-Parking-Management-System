@@ -1,0 +1,15 @@
+.prediction-card, .recommendation-card, .alert-card {
+  background: #f8f9fa;
+  border-left: 4px solid #3498db;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.alert-card {
+  border-left-color: #e74c3c;
+}
+
+.recommendation-card {
+  border-left-color: #2ecc71;
+}

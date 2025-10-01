@@ -1,0 +1,12 @@
+from .contact_routes import router as contact_router
+from .auth_routes import router as auth_router
+from .qr_routes import router as qr_router
+from .reservation_routes import router as reservation_router
+from .parking_routes import router as parking_router
+from .vehicle_routes import router as vehicle_router
+from .waitlist_routes import router as waitlist_router
+from .cancellation_routes import router as cancellation_router
+from .analytics_routes import router as analytics_router
+from .notification_routes import router as notification_router
+from .user_routes import router as user_router
+from .dashboard_routes import router as dashboard_router

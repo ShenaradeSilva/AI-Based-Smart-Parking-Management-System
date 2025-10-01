@@ -1,0 +1,16 @@
+.waitlist-management {
+  padding: 20px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1024px) {
+  .waitlist-management {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .waitlist-management {
+    padding: 10px;
+  }
+}

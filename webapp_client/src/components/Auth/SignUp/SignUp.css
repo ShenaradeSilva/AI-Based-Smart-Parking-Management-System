@@ -1,0 +1,106 @@
+/* SignUp specific styles */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.checkbox-group label {
+  margin: 0;
+  font-weight: normal;
+  color: rgb(127, 140, 141);
+  line-height: 1.4;
+  font-size: 14px;
+}
+
+.checkbox-group a {
+  color: rgb(14, 26, 85);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.checkbox-group a:hover {
+  color: rgb(41, 128, 185);
+  text-decoration: underline;
+}
+
+/* Remove the old styles that might be causing issues */
+.auth-form-group.checkbox-group {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* Ensure the form group doesn't have conflicting styles */
+.auth-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form-group.checkbox-group {
+  flex-direction: row;
+}
+
+/* Country Code Select Styles */
+.country-code-select,
+.mobile-number-input {
+  height: 48px; /* Explicit fixed height to match both */
+  padding: 0 15px; /* Adjust padding so text is vertically centered */
+  border: 1px solid rgb(14, 26, 85);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box; /* Ensures padding doesn't break height */
+}
+
+/* Specific styles for select to keep it consistent */
+.country-code-select {
+  background-color: white;
+  cursor: pointer;
+  appearance: none; /* Removes default arrow for better styling */
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.country-code-select:focus,
+.mobile-number-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Mobile Input Container */
+.mobile-input-container {
+  display: flex;
+  gap: 12px;
+  align-items: stretch; /* Makes both stretch to same height */
+}
+
+
+/* Responsive adjustments for mobile input */
+@media (max-width: 768px) {
+  .mobile-input-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .country-code-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .password-requirements {
+    padding: 14px;
+    font-size: 12px;
+  }
+}

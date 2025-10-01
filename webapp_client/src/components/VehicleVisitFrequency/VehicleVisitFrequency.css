@@ -1,0 +1,12 @@
+.vehicle-visit-frequency {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .vehicle-visit-frequency {
+    padding: 15px;
+  }
+}

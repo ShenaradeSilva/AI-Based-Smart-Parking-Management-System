@@ -1,0 +1,132 @@
+.profile-image-section {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 50px;
+}
+
+.profile-image-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin-bottom: 15px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #3498db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.profile-image-container:hover {
+  border-color: #2980b9;
+  transform: scale(1.02);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-empty {
+  width: 100%;
+  height: 100%;
+  background-color: #f0f0f0;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.profile-image-container:hover .image-overlay {
+  opacity: 1;
+}
+
+.camera-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.camera-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #3498db;
+}
+
+.image-overlay:hover .camera-icon {
+  background: white;
+  transform: scale(1.1);
+}
+
+.change-photo-text {
+  color: #3498db;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 10px 0 0;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.change-photo-text:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+  text-decoration: none;
+}
+
+.remove-photo-text {
+  color: #e74c3c;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 8px 0 0;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-photo-text:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .profile-image-section {
+    flex: 0 0 auto;
+    margin-top: 20px;
+  }
+  
+  .profile-image-container {
+    width: 120px;
+    height: 120px;
+  }
+}

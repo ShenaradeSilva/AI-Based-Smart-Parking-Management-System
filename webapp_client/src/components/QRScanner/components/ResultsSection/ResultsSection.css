@@ -1,0 +1,79 @@
+.results-section {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  min-height: 500px;
+}
+
+.scan-results h3 {
+  color: #333;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.result-details {
+  margin-bottom: 25px;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.result-row .label {
+  font-weight: bold;
+  color: #555;
+}
+
+.result-row .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.payment-section {
+  margin: 25px 0;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.payment-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.payment-amount {
+  font-size: 28px;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.restart-button {
+  display: inline-block;
+  padding: 12px 25px;
+  background-color: #0da73e; /* Primary color */
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.restart-button:hover {
+  background-color: #21b300;
+}

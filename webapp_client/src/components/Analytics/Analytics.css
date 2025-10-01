@@ -1,0 +1,31 @@
+.analytics-container {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.analytics-content {
+  display: flex;
+  gap: 20px;
+}
+
+.analytics-main {
+  flex: 2;
+}
+
+.analytics-main-content {
+  display: flex;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .analytics-main-content {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-content {
+    flex-direction: column;
+  }
+}
