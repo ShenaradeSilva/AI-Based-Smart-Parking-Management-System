@@ -1,3 +1,4 @@
+# app/utils/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from .config import DATABASE_URL
@@ -14,3 +15,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# Setup database events
+from .utils.db_events import setup_database_events
+setup_database_events()

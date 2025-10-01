@@ -47,6 +47,10 @@ def create_admin(db: Session, user_data):
     db.add(new_admin)
     db.commit()
     db.refresh(new_admin)
+
+    # Send admin welcome email
+    send_welcome_email_admin(user_data.name.strip(), email)
+
     return new_admin
 
 
@@ -92,10 +96,8 @@ def send_reset_code(user: User):
     expires_at = datetime.utcnow() + timedelta(minutes=10)
     reset_codes[user.email] = {"code": code, "expires_at": expires_at}
 
-    # Send email
-    subject = "Password Reset Verification Code"
-    body = f"Hello {user.name},\n\nYour password reset verification code is: {code}\nIt expires in 10 minutes."
-    send_email(user.email, subject, body)
+    # Send password reset code email
+    send_password_reset_code(user.name, user.email, code)
 
 
 def verify_reset_code(email: str, code: str):
@@ -124,3 +126,6 @@ def reset_password(db: Session, user: User, new_password: str):
     user.password_hash = hashed
     db.commit()
     reset_codes.pop(user.email, None)
+
+    # Send password reset success email
+    send_password_reset_success(user.name, user.email)
