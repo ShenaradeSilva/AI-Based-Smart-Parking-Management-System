@@ -127,11 +127,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     final candidates = <String?>[
       (reservation['imageAsset'] ?? reservation['locationImage'])?.toString(),
       'assets/locations/$inferred',
-      'assets/images/$inferred',
-      'assets/$inferred',
+      // 'assets/images/$inferred',
+      // 'assets/$inferred',
       'assets/locations/CCC.jpg',
-      'assets/images/CCC.jpg',
-      'assets/CCC.jpg',
+      // 'assets/images/CCC.jpg',
+      // 'assets/CCC.jpg',
     ];
     for (final p in candidates) {
       if (p == null || p.isEmpty) continue;
@@ -142,7 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         continue;
       }
     }
-    return 'assets/CCC.jpg';
+    return 'assets/locations/CCC.jpg';
   }
 
   ImageProvider? _avatarImageProvider() {

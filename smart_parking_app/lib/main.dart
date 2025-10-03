@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'Views/auth/welcome_screen.dart';
 
 void main() {
-  runApp(const ParkingFlowApp());
+  runApp(const ParkFlowApp());
 }
 
-class ParkingFlowApp extends StatelessWidget {
-  const ParkingFlowApp({super.key});
+class ParkFlowApp extends StatelessWidget {
+  const ParkFlowApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Parking Flow',
+      title: 'ParkFlow',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFF1E3A8A), // Brand navy

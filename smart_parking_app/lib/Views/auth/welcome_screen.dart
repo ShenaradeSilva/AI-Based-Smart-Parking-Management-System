@@ -263,7 +263,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       children: [
                         const TextSpan(text: 'By continuing you agree to '),
                         TextSpan(
-                          text: "Parking Flow's Terms of Service",
+                          text: "ParkFlow's Terms of Service",
                           style: const TextStyle(
                             color: Color(0xFF2E5AAC),
                             decoration: TextDecoration.underline,

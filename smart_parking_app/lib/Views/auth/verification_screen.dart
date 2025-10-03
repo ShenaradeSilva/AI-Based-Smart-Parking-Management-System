@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 import '../widgets/pf_logo.dart';
 import 'login_screen.dart';
 import '../dashboard_screen.dart';
+import 'reset_password_screen.dart';
 
 class VerificationScreen extends StatefulWidget {
-  const VerificationScreen({super.key});
+  final String email;
+  const VerificationScreen({super.key, required this.email});
 
   @override
   _VerificationScreenState createState() => _VerificationScreenState();
@@ -198,25 +201,24 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
               // Sign Up Link
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Do you have an account? ',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  TextButton(
+                  const PFLogo(size: 40),
+                  IconButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
+                      // Navigate back to LoginScreen
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
                             builder: (context) => const LoginScreen()),
+                        (route) => false,
                       );
                     },
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: Color(0xFF2E5AAC),
-                        fontWeight: FontWeight.bold,
+                    icon: const Icon(Icons.close, size: 28),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
@@ -237,8 +239,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
     }
   }
 
-  void _verifyCode() async {
-    String code = _controllers.map((controller) => controller.text).join();
+  Future<void> _verifyCode() async {
+    String code = _controllers.map((c) => c.text).join();
 
     if (code.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,51 +252,59 @@ class _VerificationScreenState extends State<VerificationScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    final response = await AuthService.verifyResetCode(widget.email, code);
 
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
 
-    // For demo purposes, accept any 4-digit code
-    if (code.length == 4) {
+    if (response['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Verification successful!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(
+            content: Text(response['message']), backgroundColor: Colors.green),
       );
 
       // Navigate to dashboard
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(
+            email: widget.email,
+            verificationCode: code, // pass the 4-digit code here
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid verification code'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(
+            content: Text(response['message']), backgroundColor: Colors.red),
       );
     }
   }
 
-  void _resendCode() {
-    if (_canResend) {
-      _startResendTimer();
+  Future<void> _resendCode() async {
+    if (!_canResend) return;
+
+    setState(() {
+      _canResend = false;
+      _resendTimer = 30;
+    });
+
+    final response = await AuthService.requestPasswordReset(widget.email);
+
+    if (response['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Verification code sent!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(
+            content: Text(response['message']), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(response['message']), backgroundColor: Colors.red),
       );
     }
+
+    _startResendTimer();
   }
 
   @override

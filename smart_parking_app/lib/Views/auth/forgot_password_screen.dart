@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 import '../widgets/pf_logo.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import 'verification_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -132,25 +134,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 // Sign Up Link
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Do you have an account? ',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    TextButton(
+                    const PFLogo(size: 40),
+                    IconButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        // Navigate back to LoginScreen and clear the stack
+                        Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const RegisterScreen()),
+                              builder: (context) => const LoginScreen()),
+                          (route) => false,
                         );
                       },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: Color(0xFF2E5AAC),
-                          fontWeight: FontWeight.bold,
+                      icon: const Icon(Icons.close, size: 28),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -170,26 +171,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final response =
+          await AuthService.requestPasswordReset(_emailController.text.trim());
 
       setState(() {
         _isLoading = false;
       });
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password reset link sent to your email!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (response['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(response['message']),
+              backgroundColor: Colors.green),
+        );
 
-      // Navigate back to login
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+        // Go to verification screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(response['message']), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

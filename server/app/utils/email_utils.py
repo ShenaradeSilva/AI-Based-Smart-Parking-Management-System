@@ -21,12 +21,3 @@ def send_email(to_email: str, subject: str, body: str):
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
-
-
-def send_verification_email(to_email: str, code: str):
-    """
-    Sends a password reset verification code.
-    """
-    subject = "Your Password Reset Code"
-    body = f"Your verification code is: {code}"
-    send_email(to_email, subject, body)

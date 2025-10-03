@@ -6,7 +6,6 @@ from app.routes import(
     dashboard_router,
     qr_router,
     reservation_router,
-    vehicle_router,
     parking_router,
     vehicle_router,
     waitlist_router,
@@ -37,7 +36,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(contact_router, prefix="/api/contact", tags=["Contact"])
-app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+app.include_router(auth_router)
 app.include_router(qr_router, prefix="/api/qr", tags=["QR"])
 app.include_router(reservation_router, prefix="/api/reservations", tags=["Reservations"])
 app.include_router(vehicle_router, prefix="/api/vehicles", tags=["Vehicles"])

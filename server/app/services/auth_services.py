@@ -7,12 +7,68 @@ import random
 
 from ..models.user_model import User, UserRole, UserStatus
 from ..models.usersession_model import UserSession
-from ..utils.email_utils import send_email, send_verification_email
+from ..models.vehicle_model import Vehicle
+from ..utils.email_service import send_welcome_email_driver, send_welcome_email_admin, send_password_reset_code, send_password_reset_success
+from ..utils.email_utils import send_email
 from ..utils.auth_utils import create_access_token
 from ..config import ACCESS_TOKEN_EXPIRE_MINUTES
 
 # In-memory store for password reset codes
 reset_codes = {}  # { email: { "code": "1234", "expires_at": datetime } }
+
+
+def create_driver(db: Session, user_data):
+    """
+    Create a new driver and their vehicle.
+    """
+    email = user_data.email.strip().lower()
+
+    # Check if email already exists
+    existing_user = db.query(User).filter(func.lower(User.email) == email).first()
+    if existing_user:
+        return None  # email already exists
+
+    # Hash password
+    if not user_data.password:
+        raise ValueError("Password is required for driver account")
+
+    hashed_password = bcrypt.hashpw(
+        user_data.password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
+
+    new_driver = User(
+        name=user_data.name.strip(),
+        email=email,
+        password_hash=hashed_password,
+        phone=user_data.phone.strip() if user_data.phone else None,
+        role=UserRole.driver,
+        status=UserStatus.active,
+    )
+
+    db.add(new_driver)
+    db.commit()
+    db.refresh(new_driver)
+
+    # Add vehicle
+    if user_data.vehicle_number and user_data.vehicle_type:
+        vehicle = Vehicle(
+            plate_number=user_data.vehicle_number.strip(),
+            type=user_data.vehicle_type.strip(),
+            user_id=new_driver.user_id,
+        )
+        db.add(vehicle)
+        db.commit()
+        db.refresh(vehicle)
+
+    # Send driver welcome email
+    send_welcome_email_driver(
+        name=user_data.name.strip(),
+        email=email,
+        phone=user_data.phone.strip() if user_data.phone else "N/A",
+        vehicle_number=user_data.vehicle_number.strip() if user_data.vehicle_number else "N/A"
+    )
+
+    return new_driver
 
 
 def create_admin(db: Session, user_data):
@@ -54,29 +110,35 @@ def create_admin(db: Session, user_data):
     return new_admin
 
 
-def login_admin(db: Session, email: str, password: str):
+def login_user(db: Session, email: str, password: str, platform: str = "mobile"):
     """
-    Authenticate admin user only.
-    Returns (token, user) if successful, None if invalid or not admin.
+    Authenticate a user (driver or admin)
+    :param platform: "mobile" for drivers, "web" for admins
     """
     email = email.strip().lower()
     user = db.query(User).filter(func.lower(User.email) == email).first()
 
-    # reject if not found, not admin, or inactive
-    if not user or user.role != UserRole.admin or user.status != UserStatus.active:
+    # Reject if not found or inactive
+    if not user or user.status != UserStatus.active:
         return None
 
-    # check password
+    # Enforce platform access
+    if platform == "web" and user.role != UserRole.admin:
+        return None
+    if platform == "mobile" and user.role != UserRole.driver:
+        return None
+
+    # Verify password
     if not bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
         return None
 
-    # generate JWT token
+    # Generate JWT token
     token = create_access_token({"sub": str(user.user_id), "role": user.role})
 
-    # remove old sessions
+    # Remove old sessions
     db.query(UserSession).filter(UserSession.user_id == user.user_id).delete()
 
-    # create new session
+    # Create new session
     expiry = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     session = UserSession(token=token, expiry=expiry, user_id=user.user_id)
     db.add(session)
@@ -89,20 +151,19 @@ def login_admin(db: Session, email: str, password: str):
 # Password Reset
 def send_reset_code(user: User):
     """
-    Generate a 4-digit code, store temporarily, and send via email.
-    Expires in 10 minutes.
+    Generate and send a 4-digit reset code (expires in 10 mins).
     """
     code = f"{random.randint(1000, 9999)}"
     expires_at = datetime.utcnow() + timedelta(minutes=10)
     reset_codes[user.email] = {"code": code, "expires_at": expires_at}
 
-    # Send password reset code email
     send_password_reset_code(user.name, user.email, code)
+    return True
 
 
 def verify_reset_code(email: str, code: str):
     """
-    Verify if the reset code is valid and not expired.
+    Check if reset code is valid and not expired.
     """
     record = reset_codes.get(email)
     if not record:
@@ -112,7 +173,7 @@ def verify_reset_code(email: str, code: str):
         return False, "Invalid verification code"
 
     if record["expires_at"] < datetime.utcnow():
-        reset_codes.pop(email)
+        reset_codes.pop(email, None)
         return False, "Code expired"
 
     return True, None
@@ -120,12 +181,13 @@ def verify_reset_code(email: str, code: str):
 
 def reset_password(db: Session, user: User, new_password: str):
     """
-    Reset the user's password and remove the used code.
+    Reset password after successful code verification.
     """
     hashed = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     user.password_hash = hashed
     db.commit()
-    reset_codes.pop(user.email, None)
 
-    # Send password reset success email
+    reset_codes.pop(user.email, None)
     send_password_reset_success(user.name, user.email)
+
+    return True

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../Models/user_data.dart';
+import '../../services/auth_service.dart';
 import '../widgets/pf_logo.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../dashboard_screen.dart';
+import 'welcome_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,7 +38,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const PFLogo(size: 40),
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const WelcomeScreen()),
+                          (route) => false,
+                        );
+                      },
                       icon: const Icon(Icons.close, size: 24),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.grey.withOpacity(0.1),
@@ -170,7 +180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 40), // Increased spacing instead of divider
+                const SizedBox(
+                    height: 40), // Increased spacing instead of divider
 
                 // REMOVED: Divider and Social Login Buttons
                 // This section has been completely removed
@@ -212,22 +223,43 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleSignIn() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      // Simulate API call / local auth
-      await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isLoading = true);
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+    try {
+      final response = await AuthService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
+
+      if (response['access_token'] != null && response['user'] != null) {
+        // Update in-memory user data for UI
+        UserData.updateUserData(response['user']);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful')),
+        );
+
+        // Navigate to dashboard
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          (route) => false,
+        );
+      } else {
+        final msg = response['message']?.toString() ?? 'Login failed';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

@@ -1,51 +1,49 @@
-# app/utils/db_dump.py
 import subprocess
-import os
 import threading
+import os
 from ..config import DB_USER, DB_PASSWORD, DB_HOST, DB_NAME
-
 
 def update_database_dump():
     """
-        Update the parkflow.sql dump file
+    Update the existing parkflow.sql dump file in the project root.
     """
     try:
-        # Define the path to your parkflow.sql file
-        dump_file = "parkflow.sql"
+        # Full path to parkflow.sql in root folder
+        root_folder = os.path.abspath(os.path.join(os.getcwd(), ".."))  # go one level up from server/
+        dump_file = os.path.join(root_folder, "parkflow.sql")
 
-        # Create mysqldump command
+        # mysqldump command
         cmd = [
-            'mysqldump',
+            'mysqldump',  # must be in PATH or use full path
             '-u', DB_USER,
             f'-p{DB_PASSWORD}',
             '-h', DB_HOST,
             DB_NAME
         ]
 
-        # Update the parkflow.sql file
+        # Overwrite existing dump file
         with open(dump_file, 'w') as f:
             result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, text=True)
 
-            if result.returncode != 0:
-                print(f"mysqldump error: {result.stderr}")
-                return False
+        if result.returncode != 0:
+            print(f"[DB DUMP ERROR] mysqldump failed: {result.stderr}")
+            return False
 
-        print(f"Database dump updated: {dump_file}")
+        print(f"[DB DUMP] Database dump updated: {dump_file}")
         return True
 
     except Exception as e:
-        print(f"Error updating dump: {e}")
+        print(f"[DB DUMP ERROR] Exception: {e}")
         return False
 
 
 def trigger_dump_update():
     """
-        Trigger dump update in background thread
+    Trigger dump update in a background thread.
     """
     try:
         thread = threading.Thread(target=update_database_dump, daemon=True)
         thread.start()
-        print("Database dump update triggered...")
-
+        print("[DB DUMP] Database dump update triggered in background thread...")
     except Exception as e:
-        print(f"Failed to trigger dump update: {e}")
+        print(f"[DB DUMP ERROR] Failed to trigger dump update: {e}")

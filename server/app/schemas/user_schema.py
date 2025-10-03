@@ -10,6 +10,20 @@ class UserStatus(str, Enum):
     inactive = "inactive"
 
 
+class DriverSignUp(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=100)
+    phone: Optional[str] = Field(None, max_length=50)
+
+    # Vehicle info
+    vehicle_number: str = Field(..., max_length=50)
+    vehicle_type: str = Field(..., max_length=50)
+
+    class Config:
+        from_attributes = True
+
+
 # User creation (admin or self)
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -37,6 +51,7 @@ class UserAdminUpdate(BaseModel):
 class SignInRequest(BaseModel):
     email: EmailStr
     password: str
+    platform: str = Field(..., description="Platform: 'web' for admin, 'mobile' for driver")
 
     class Config:
         from_attributes = True
@@ -62,6 +77,10 @@ class TokenResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TokenWithUser(TokenResponse):
+    user: UserOut
 
 
 # Password reset flows
@@ -92,7 +111,6 @@ class UserProfileUpdate(BaseModel):
         from_attributes = True
 
 
-# ✅ Moved OUTSIDE, top-level class
 class UserProfileOut(BaseModel):
     user_id: int
     name: str
@@ -103,6 +121,10 @@ class UserProfileOut(BaseModel):
     profilePicture: Optional[str] = Field(None, alias="profile_picture")
     join_date: Optional[datetime] = Field(None, alias="created_at")
 
+    # Add vehicle fields
+    vehicle_number: Optional[str] = None
+    vehicle_type: Optional[str] = None
+
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+        from_attributes = True
+        populate_by_name = True

@@ -5,8 +5,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import '../services/user_service.dart';
 import 'auth/login_screen.dart';
+import 'dashboard_screen.dart';
 import 'payment_screen.dart';
 import 'reservation/booking_history_screen.dart';
 import 'notification_screen.dart';
@@ -38,10 +39,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isEditing = false;
   String? _profileImagePath;
   Uint8List? _profileImageBytes;
+
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+
   late AnimationController _animationController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
   bool _pushEnabled = false;
 
   // Notification data
@@ -105,6 +112,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
     _loadUserData();
     _initializeAnimations();
     _initNotifications();
@@ -119,17 +129,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic));
-
     _fadeController.forward();
     _animationController.repeat();
   }
@@ -146,7 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     final prefs = await SharedPreferences.getInstance();
     setState(() => _pushEnabled = value);
     await prefs.setBool('pushEnabled', value);
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(value
@@ -158,36 +164,65 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
     _animationController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
-  void _loadUserData() {
-    setState(() {
-      _userProfile = Map.from(UserData.userData);
-      // Set default values if not present
-      _userProfile['name'] ??= 'Alan Parker';
-      _userProfile['email'] ??= 'alanpark@gmail.com';
-      _userProfile['phone'] ??= '+8801505030143';
+  void _loadUserData() async {
+    final result = await UserService.getProfile();
+    if (result['success']) {
+      final data = result['data'];
+      setState(() {
+        _userProfile = data;
+        _nameController.text = data['name'] ?? '';
+        _emailController.text = data['email'] ?? '';
+        _phoneController.text = data['phone'] ?? '';
+      });
 
-      // Ensure vehicles are loaded
-      if (!_userProfile.containsKey('vehicles')) {
-        _userProfile['vehicles'] = UserData.vehicles;
-      }
-    });
+      _syncVehiclesFromBackend(data);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Failed to load profile')),
+      );
+    }
+  }
+
+  void _syncVehiclesFromBackend(Map<String, dynamic> data) {
+    final vn = data['vehicle_number'];
+    final vt = data['vehicle_type'];
+
+    if (vn != null &&
+        vn is String &&
+        vn.isNotEmpty &&
+        vn != 'N/A' &&
+        vt != null &&
+        vt is String &&
+        vt.isNotEmpty &&
+        vt != 'N/A') {
+      UserData.setVehicles([
+        {
+          'plate_number': vn,
+          'type': vt,
+          'is_primary': true,
+          'id': '1',
+        }
+      ]);
+    } else {
+      UserData.setVehicles([]);
+    }
   }
 
   // Pick profile image from gallery
   Future<void> _pickProfileImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
     if (image == null) return;
-
     try {
       if (kIsWeb) {
-        // Web: read bytes from XFile directly, no dart:io File
         final bytes = await image.readAsBytes();
         if (bytes.isEmpty) throw Exception('Selected image is empty');
         setState(() {
@@ -197,7 +232,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         UserData.setProfileImageBase64(base64Encode(bytes));
         UserData.setProfileImage(null);
       } else {
-        // Mobile/Desktop: use File path and also store base64
         setState(() {
           _profileImagePath = image.path;
           _profileImageBytes = null;
@@ -208,7 +242,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           UserData.setProfileImageBase64(base64Encode(bytes));
         }
       }
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -242,7 +275,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   ImageProvider _buildProfileImageProvider() {
-    // On web: prefer current session bytes, then stored base64
     if (kIsWeb) {
       if (_profileImageBytes != null && _profileImageBytes!.isNotEmpty) {
         return MemoryImage(_profileImageBytes!);
@@ -253,33 +285,27 @@ class _ProfileScreenState extends State<ProfileScreen>
           return MemoryImage(base64Decode(base64Data));
         } catch (_) {}
       }
-      return const NetworkImage(
-          'https://via.placeholder.com/150/CCCCCC/FFFFFF?text=Profile');
+      return const AssetImage('assets/images/avatar_placeholder.png');
     }
 
-    // Non-web platforms
     if (_profileImagePath != null && _profileImagePath!.isNotEmpty) {
       try {
         return FileImage(File(_profileImagePath!));
       } catch (_) {}
     }
-
     final base64Data = UserData.getProfileImageBase64();
     if (base64Data != null && base64Data.isNotEmpty) {
       try {
         return MemoryImage(base64Decode(base64Data));
       } catch (_) {}
     }
-
     final path = UserData.getProfileImage();
     try {
       if (path != null && path.isNotEmpty && File(path).existsSync()) {
         return FileImage(File(path));
       }
     } catch (_) {}
-
-    return const NetworkImage(
-        'https://via.placeholder.com/150/CCCCCC/FFFFFF?text=Profile');
+    return const AssetImage('assets/images/avatar_placeholder.png');
   }
 
   @override
@@ -300,7 +326,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: textColor),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            );
+          },
         ),
         actions: [
           IconButton(
@@ -661,26 +692,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 24),
                     _buildModernField(
-                      'Full Name',
-                      _userProfile['name'] ?? '',
-                      Icons.person_outline_rounded,
-                      (value) => _userProfile['name'] = value,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInfoRow('Date of Birth', _userProfile['dob'] ?? ''),
-                    const SizedBox(height: 16),
-                    _buildModernField(
-                      'Email Address',
-                      _userProfile['email'] ?? '',
-                      Icons.email_outlined,
-                      (value) => _userProfile['email'] = value,
+                      label: 'Full Name',
+                      icon: Icons.person_outline_rounded,
+                      controller: _nameController,
                     ),
                     const SizedBox(height: 16),
                     _buildModernField(
-                      'Phone Number',
-                      _userProfile['phone'] ?? '',
-                      Icons.phone_outlined,
-                      (value) => _userProfile['phone'] = value,
+                      label: 'Email Address',
+                      icon: Icons.email_outlined,
+                      controller: _emailController,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernField(
+                      label: 'Phone Number',
+                      icon: Icons.phone_outlined,
+                      controller: _phoneController,
                     ),
                     const SizedBox(height: 16),
                     _buildVehicleSection(),
@@ -694,8 +720,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildModernField(
-      String label, String value, IconData icon, Function(String) onChanged) {
+  Widget _buildModernField({
+    required String label,
+    required IconData icon,
+    required TextEditingController controller,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -720,7 +749,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           child: TextFormField(
-            initialValue: value,
+            controller: controller,
             enabled: _isEditing,
             decoration: InputDecoration(
               prefixIcon: Container(
@@ -736,23 +765,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            onChanged: onChanged,
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Text(
-          '$label: ',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(value),
       ],
     );
   }
@@ -761,7 +775,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     final primary = UserData.getPrimaryVehicle();
     final others =
         UserData.vehicles.where((v) => v['is_primary'] != true).toList();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -875,7 +888,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showAddVehicleDialog() {
     final plateController = TextEditingController();
     String type = 'Car';
-
     showDialog(
       context: context,
       builder: (context) {
@@ -896,7 +908,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 value: type,
                 items: const [
                   DropdownMenuItem(value: 'Car', child: Text('Car')),
-                  DropdownMenuItem(value: 'Jeep', child: Text('jeep')),
+                  DropdownMenuItem(value: 'Jeep', child: Text('Jeep')),
                   DropdownMenuItem(value: 'Van', child: Text('Van')),
                   DropdownMenuItem(value: 'Bike', child: Text('Bike')),
                 ],
@@ -1294,35 +1306,41 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
   }
 
-  void _saveInfo() {
-    setState(() {
-      _isEditing = false;
-    });
+  void _saveInfo() async {
+    setState(() => _isEditing = false);
 
-    Map<String, dynamic> updatedData = {};
-    updatedData['name'] = _userProfile['name'];
-    updatedData['email'] = _userProfile['email'];
-    updatedData['phone'] = _userProfile['phone'];
-
-    UserData.updateUserData(updatedData);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            const Text('Profile updated successfully!'),
-          ],
-        ),
-        backgroundColor: secondaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
+    final primaryVehicle = UserData.getPrimaryVehicle();
+    final result = await UserService.updateProfile(
+      name: _nameController.text,
+      email: _emailController.text,
+      phone: _phoneController.text,
+      vehicleNumber: primaryVehicle?['plate_number'],
+      vehicleType: primaryVehicle?['type'],
     );
+
+    if (result['success']) {
+      final newData = result['data'];
+      setState(() {
+        _userProfile = newData;
+        _nameController.text = newData['name'] ?? '';
+        _emailController.text = newData['email'] ?? '';
+        _phoneController.text = newData['phone'] ?? '';
+      });
+
+      _syncVehiclesFromBackend(newData);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully!')),
+      );
+    } else {
+      // Revert on failure
+      setState(() {
+        _isEditing = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Update failed')),
+      );
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -1420,163 +1438,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showSettingsDialog(BuildContext context) {
-    bool notificationsEnabled = true;
-    bool emailNotifications = true;
-    bool pushNotifications = true;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.settings_rounded,
-                        color: primaryColor,
-                        size: 48,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Settings',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            title: const Text('Enable Notifications',
-                                style: TextStyle(color: Colors.black)),
-                            value: notificationsEnabled,
-                            onChanged: (value) {
-                              setState(() {
-                                notificationsEnabled = value;
-                              });
-                            },
-                            activeColor: primaryColor,
-                          ),
-                          SwitchListTile(
-                            title: const Text('Email Notifications',
-                                style: TextStyle(color: Colors.black)),
-                            value: emailNotifications,
-                            onChanged: (value) {
-                              setState(() {
-                                emailNotifications = value;
-                              });
-                            },
-                            activeColor: primaryColor,
-                          ),
-                          SwitchListTile(
-                            title: const Text('Push Notifications',
-                                style: TextStyle(color: Colors.black)),
-                            value: pushNotifications,
-                            onChanged: (value) {
-                              setState(() {
-                                pushNotifications = value;
-                              });
-                            },
-                            activeColor: primaryColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Colors.black),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      const Icon(Icons.check_circle,
-                                          color: Colors.white),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                          'Settings saved successfully!'),
-                                    ],
-                                  ),
-                                  backgroundColor: secondaryColor,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  margin: const EdgeInsets.all(16),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Save',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         );
       },
     );

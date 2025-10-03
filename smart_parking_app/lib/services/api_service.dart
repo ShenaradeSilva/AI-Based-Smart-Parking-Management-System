@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   // Backend base URL selection based on platform
@@ -13,88 +15,68 @@ class ApiService {
     return 'http://10.0.2.2:5000/api';
   }
 
-  // Generic POST method
+// Generic POST request
   static Future<Map<String, dynamic>> post(
       String endpoint, Map<String, dynamic> data) async {
     try {
-      if (kDebugMode) {
-        print('API Call: POST $baseUrl/$endpoint');
-        print('Request Data: $data');
-      }
+      if (kDebugMode) print('POST: $baseUrl/$endpoint => $data');
 
       final response = await http.post(
         Uri.parse('$baseUrl/$endpoint'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode(data),
       );
 
-      if (kDebugMode) {
-        print('Response Status: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-      }
-
       final responseData = json.decode(response.body);
 
-      // Treat 200 OK and 201 Created as success for POST
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return responseData;
-      } else {
-        // Propagate backend error message when available
-        throw Exception(responseData is Map && responseData['message'] != null
-            ? responseData['message']
-            : 'Failed to load data: ${response.statusCode}');
-      }
-    } catch (e) {
       if (kDebugMode) {
-        print('API Error: $e');
-      }
-      throw Exception('Network error: $e');
-    }
-  }
-
-  // Generic GET method WITHOUT authentication
-  static Future<Map<String, dynamic>> getPublic(String endpoint) async {
-    try {
-      if (kDebugMode) {
-        print('API Call: GET $baseUrl/$endpoint');
+        print('POST Response: ${response.statusCode} => ${response.body}');
       }
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (kDebugMode) {
-        print('Response Status: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-      }
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         return responseData;
       } else {
         throw Exception(responseData['message'] ??
-            'Failed to load data: ${response.statusCode}');
+            'Failed POST request: ${response.statusCode}');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('API Error: $e');
-      }
+      if (kDebugMode) print('POST Error: $e');
       throw Exception('Network error: $e');
     }
   }
 
-  // Generic GET method with authentication
+  // Generic GET request (no token)
+  static Future<Map<String, dynamic>> getPublic(String endpoint) async {
+    try {
+      if (kDebugMode) print('GET Public: $baseUrl/$endpoint');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (kDebugMode) {
+        print('GET Public Response: ${response.statusCode} => ${response.body}');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return responseData;
+      } else {
+        throw Exception(responseData['message'] ??
+            'Failed GET request: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('GET Public Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Generic GET request (with token)
   static Future<Map<String, dynamic>> get(String endpoint, String token) async {
     try {
-      if (kDebugMode) {
-        print('API Call: GET $baseUrl/$endpoint');
-      }
+      if (kDebugMode) print('GET: $baseUrl/$endpoint');
 
       final response = await http.get(
         Uri.parse('$baseUrl/$endpoint'),
@@ -104,35 +86,29 @@ class ApiService {
         },
       );
 
-      if (kDebugMode) {
-        print('Response Status: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-      }
-
       final responseData = json.decode(response.body);
 
-      if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('GET Response: ${response.statusCode} => ${response.body}');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         return responseData;
       } else {
         throw Exception(responseData['message'] ??
-            'Failed to load data: ${response.statusCode}');
+            'Failed GET request: ${response.statusCode}');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('API Error: $e');
-      }
+      if (kDebugMode) print('GET Error: $e');
       throw Exception('Network error: $e');
     }
   }
 
-  // Generic PUT method with authentication
+  // Generic PUT request (with token)
   static Future<Map<String, dynamic>> put(
       String endpoint, Map<String, dynamic> data, String token) async {
     try {
-      if (kDebugMode) {
-        print('API Call: PUT $baseUrl/$endpoint');
-        print('Request Data: $data');
-      }
+      if (kDebugMode) print('PUT: $baseUrl/$endpoint => $data');
 
       final response = await http.put(
         Uri.parse('$baseUrl/$endpoint'),
@@ -143,23 +119,61 @@ class ApiService {
         body: json.encode(data),
       );
 
-      if (kDebugMode) {
-        print('Response Status: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-      }
-
       final responseData = json.decode(response.body);
 
-      if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('PUT Response: ${response.statusCode} => ${response.body}');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         return responseData;
       } else {
         throw Exception(responseData['message'] ??
-            'Failed to update data: ${response.statusCode}');
+            'Failed PUT request: ${response.statusCode}');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('API Error: $e');
+      if (kDebugMode) print('PUT Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // PUT Multipart (for file upload)
+  static Future<Map<String, dynamic>> putMultipart(
+      String endpoint, Map<String, String> fields, File? file, String token,
+      {String fileFieldName = 'profile_picture', String? mimeType}) async {
+    try {
+      if (kDebugMode) print('PUT Multipart: $baseUrl/$endpoint');
+
+      final uri = Uri.parse('$baseUrl/$endpoint');
+      final request = http.MultipartRequest('PUT', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..fields.addAll(fields);
+
+      if (file != null) {
+        final mimeParts = (mimeType ?? 'image/jpeg').split('/');
+        request.files.add(await http.MultipartFile.fromPath(
+          fileFieldName,
+          file.path,
+          contentType: MediaType(mimeParts[0], mimeParts[1]),
+        ));
       }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final responseData = json.decode(response.body);
+
+      if (kDebugMode) {
+        print('PUT Multipart Response: ${response.statusCode} => ${response.body}');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return responseData;
+      } else {
+        throw Exception(responseData['message'] ??
+            'Failed Multipart PUT request: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('PUT Multipart Error: $e');
       throw Exception('Network error: $e');
     }
   }
