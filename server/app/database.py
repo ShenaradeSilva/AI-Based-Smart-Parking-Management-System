@@ -16,7 +16,3 @@ def get_db():
     finally:
         db.close()
 
-
-# Setup database events
-from .utils.db_events import setup_database_events
-setup_database_events()

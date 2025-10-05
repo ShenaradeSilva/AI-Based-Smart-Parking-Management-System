@@ -5,7 +5,7 @@ import API from '../../../api/axios';
 import webappimg4 from '../../../assets/web_app_image4.jpg';
 
 function ContactForm() {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [errors, setErrors] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -13,6 +13,10 @@ function ContactForm() {
     const newErrors = {};
     newErrors.name = validateName(formData.name);
     newErrors.email = validateEmail(formData.email);
+
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Subject is required';
+    }
 
     if (!formData.message.trim()) {
       newErrors.message = 'Message is required';
@@ -35,9 +39,13 @@ function ContactForm() {
     const { name, value } = e.target;
     if (name === 'name') setErrors((prev) => ({ ...prev, name: validateName(value) }));
     if (name === 'email') setErrors((prev) => ({ ...prev, email: validateEmail(value) }));
+    if (name === 'subject') {
+      if (!value.trim()) setErrors((prev) => ({ ...prev, subject: 'Subject is required' }));
+    }
     if (name === 'message') {
       if (!value.trim()) setErrors((prev) => ({ ...prev, message: 'Message is required' }));
-      else if (value.trim().length < 10) setErrors((prev) => ({ ...prev, message: 'Message must be at least 10 characters long' }));
+      else if (value.trim().length < 10)
+        setErrors((prev) => ({ ...prev, message: 'Message must be at least 10 characters long' }));
     }
   };
 
@@ -50,7 +58,7 @@ function ContactForm() {
       if (response.data.status === 'success') {
         setIsSubmitted(true);
         setTimeout(() => {
-          setFormData({ name: '', email: '', message: '' });
+          setFormData({ name: '', email: '', subject: '', message: '' });
           setIsSubmitted(false);
         }, 3000);
       }
@@ -64,7 +72,7 @@ function ContactForm() {
       {/* Contact Info */}
       <div className="contact-info">
         <h3>Get in Touch</h3>
-        <p><strong>Email:</strong> parkflow.info@gmail.com</p>
+        <p><strong>Email:</strong> parkflowteam@gmail.com</p>
         <p><strong>Hours:</strong> Monday-Friday: 9am-6pm</p>
         <div className="contact-image-large">
           <img src={webappimg4} alt="Contact" />
@@ -104,6 +112,19 @@ function ContactForm() {
                 className={errors.email ? 'error' : ''}
               />
               {errors.email && <span className="error-message">{errors.email}</span>}
+            </div>
+
+            <div className="form-group">
+              <input
+                type="text"
+                name="subject"
+                placeholder="Subject"
+                value={formData.subject}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={errors.subject ? 'error' : ''}
+              />
+              {errors.subject && <span className="error-message">{errors.subject}</span>}
             </div>
 
             <div className="form-group">

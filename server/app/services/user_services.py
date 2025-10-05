@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from datetime import datetime
 from typing import Optional, List
+import base64
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from ..models.user_model import User, UserRole, UserStatus
 from ..models.usersession_model import UserSession
+from ..models.vehicle_model import Vehicle
 from ..database import get_db
 from ..utils.auth_utils import decode_access_token
 
@@ -69,12 +71,63 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.user_id == user_id).first()
 
 
+def get_user_profile_with_vehicles(db: Session, user_id: int) -> Optional[dict]:
+    """
+    Get user profile with vehicle information for frontend.
+    """
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        return None
+
+    # Get all vehicles for the user, ordered by creation date
+    vehicles = db.query(Vehicle).filter(Vehicle.user_id == user_id).order_by(Vehicle.created_at.asc()).all()
+
+    # Convert profile picture to base64 if it exists
+    profile_picture_base64 = None
+    if user.profile_picture:
+        try:
+            profile_picture_base64 = base64.b64encode(user.profile_picture).decode('utf-8')
+        except Exception:
+            profile_picture_base64 = None
+
+    # Create vehicles list - first vehicle is primary
+    vehicles_list = []
+    for i, vehicle in enumerate(vehicles):
+        # First vehicle (oldest) is always primary
+        is_primary = i == 0
+
+        vehicles_list.append({
+            "vehicle_id": vehicle.vehicle_id,
+            "plate_number": vehicle.plate_number,
+            "type": vehicle.type,
+            "user_id": vehicle.user_id,
+            "created_at": vehicle.created_at,
+            "is_primary": is_primary
+        })
+
+    # Safely handle enum conversion
+    role_value = user.role.value if hasattr(user.role, 'value') else str(user.role)
+    status_value = user.status.value if hasattr(user.status, 'value') else str(user.status)
+
+    return {
+        "user_id": user.user_id,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "role": role_value,
+        "status": status_value,
+        "profile_picture": profile_picture_base64,
+        "join_date": user.created_at,
+        "vehicles": vehicles_list
+    }
+
+
 def update_user_profile(
     db: Session,
     user_id: int,
     name: Optional[str] = None,
     email: Optional[str] = None,
-    mobile: Optional[str] = None,
+    phone: Optional[str] = None,
     password: Optional[str] = None,
     profile_picture: Optional[bytes] = None,
     remove_picture: bool = False
@@ -90,11 +143,34 @@ def update_user_profile(
         user.name = name.strip()
     if email:
         user.email = email.strip()
-    if mobile:
-        if mobile is not None:
-            user.phone = mobile.strip()
+    if phone:
+        if phone is not None:
+            user.phone = phone.strip()
     if password:
         user.password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    if profile_picture:
+        user.profile_picture = profile_picture
+    if remove_picture:
+        user.profile_picture = None
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_profile_picture(
+    db: Session,
+    user_id: int,
+    profile_picture: Optional[bytes] = None,
+    remove_picture: bool = False
+) -> Optional[User]:
+    """
+    Update only the profile picture.
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+
     if profile_picture:
         user.profile_picture = profile_picture
     if remove_picture:

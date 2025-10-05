@@ -1,11 +1,22 @@
 from ..schemas.contact_schema import ContactMessage
-from ..utils.email_utils import send_email
+from ..utils.email_service import send_email_async
 
-GMAIL_EMAIL = "parkflow.info@gmail.com"  # sending address
+ADMIN_EMAIL = "parkflowteam@gmail.com"  # your admin inbox
 
 
 def send_contact_email(contact: ContactMessage):
+    """
+    Format and send contact form message to admin
+    """
     subject = f"Contact Form: {contact.subject}"
-    body = f"Name: {contact.name}\nEmail: {contact.email}\n\nMessage:\n{contact.message}"
+    body = f"""
+    You have received a new message from ParkFlow Contact Form:
 
-    send_email(GMAIL_EMAIL, subject, body)  # send to yourself
+    Name: {contact.name}
+    Email: {contact.email}
+
+    Message:
+    {contact.message}
+    """
+
+    return send_email_async(ADMIN_EMAIL, subject, body)

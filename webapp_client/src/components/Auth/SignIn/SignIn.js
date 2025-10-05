@@ -14,13 +14,11 @@ const SignIn = () => {
     password: ''
   });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // optional loading state
   const [serverError, setServerError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleClose = () => {
-    navigate('/');
-  };
+  const handleClose = () => navigate('/');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -30,14 +28,12 @@ const SignIn = () => {
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    if (value) {
-      const newErrors = { ...errors };
-      if (name === 'email') newErrors.email = validateEmail(value);
-      Object.keys(newErrors).forEach(key => {
-        if (!newErrors[key]) delete newErrors[key];
-      });
-      setErrors(newErrors);
-    }
+    const newErrors = { ...errors };
+    if (name === 'email') newErrors.email = validateEmail(value);
+    Object.keys(newErrors).forEach(key => {
+      if (!newErrors[key]) delete newErrors[key];
+    });
+    setErrors(newErrors);
   };
 
   const validateForm = () => {
@@ -59,17 +55,20 @@ const SignIn = () => {
 
     try {
       setLoading(true);
+
       const response = await API.post('/api/auth/signin', {
-        email: formData.email,
-        password: formData.password
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        platform: 'web', // explicitly tell backend this is a web login
+        role: 'admin'    // optional: if your backend also checks role
       });
 
-      const { access_token, user} = response.data;
+      const { access_token, user } = response.data;
 
       // Save the JWT token in localStorage
       localStorage.setItem('authToken', access_token);
 
-      navigate('/dashboard');
+      navigate('/dashboard'); // redirect to admin dashboard
     } catch (error) {
       console.error(error);
       if (error.response && error.response.data.detail) {
@@ -82,33 +81,27 @@ const SignIn = () => {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <button className="auth-close-btn" onClick={handleClose}>
-          <CloseIcon />
-        </button>
-        
+        <button className="auth-close-btn" onClick={handleClose}><CloseIcon /></button>
+
         <div className='auth-header'>
           <Logo1 />
           <div className='auth-text'>
             <h2>Sign In to your Account</h2>
           </div>
-        </div>        
-        
+        </div>
+
         <form className="auth-form" onSubmit={handleSubmit}>
           {serverError && <div className="server-error">{serverError}</div>}
 
           <div className="auth-form-group">
             <label htmlFor="email">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              name="email" 
+            <input
+              type="email"
+              id="email"
+              name="email"
               value={formData.email}
               onChange={handleInputChange}
               onBlur={handleBlur}
@@ -117,44 +110,40 @@ const SignIn = () => {
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
-          
+
           <div className="auth-form-group auth-password-group">
             <label htmlFor="password">Password</label>
             <div className="auth-password-input-container">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                id="password" 
-                name="password" 
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
                 maxLength="15"
-                placeholder="Enter your password" 
+                placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                required 
+                required
                 className={errors.password ? 'error' : ''}
               />
-              <button 
-                type="button" 
-                className="password-toggle"
-                onClick={togglePasswordVisibility}
-              >
+              <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeIcon /> : <EyeOffIcon />}
               </button>
             </div>
             {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
-          
+
           <p className="forgot-password-link">
             <a href="/resetpassword">Forgot Password?</a>
           </p>
-          
+
           <div className="auth-btn-container">
             <button type="submit" className="auth-btn" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
         </form>
-        
+
         <p className="auth-link">Don't have an account? <a href="/signup">Sign Up!</a></p>
       </div>
     </div>

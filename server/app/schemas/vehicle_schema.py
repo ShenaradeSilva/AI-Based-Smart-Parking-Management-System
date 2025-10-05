@@ -22,6 +22,7 @@ class VehicleUpdate(BaseModel):
 class VehicleOut(VehicleBase):
     vehicle_id: int
     created_at: datetime
+    is_primary: bool = False
 
     class Config:
         from_attributes = True

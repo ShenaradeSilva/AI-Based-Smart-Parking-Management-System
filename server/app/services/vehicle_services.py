@@ -15,8 +15,6 @@ def get_vehicle_by_id(vehicle_id: int, db: Session):
     return vehicle
 
 
-
-
 def get_vehicle_by_plate(plate_number: str, db: Session):
     return db.query(Vehicle).filter(Vehicle.plate_number == plate_number).first()
 
@@ -42,6 +40,25 @@ def update_vehicle(vehicle_id: int, data: VehicleUpdate, db: Session):
 
 def delete_vehicle(vehicle_id: int, db: Session):
     vehicle = get_vehicle_by_id(vehicle_id, db)
+
+    # Get all vehicles for this user, ordered by creation date
+    user_vehicles = db.query(Vehicle).filter(Vehicle.user_id == vehicle.user_id).order_by(
+        Vehicle.created_at.asc()).all()
+
+    # Check if this is the first/primary vehicle (oldest vehicle)
+    if user_vehicles and user_vehicles[0].vehicle_id == vehicle_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your primary vehicle. This is your first registered vehicle."
+        )
+
+    # Check if this is the user's only vehicle
+    if len(user_vehicles) == 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your only vehicle. Please add another vehicle first."
+        )
+
     db.delete(vehicle)
     db.commit()
 

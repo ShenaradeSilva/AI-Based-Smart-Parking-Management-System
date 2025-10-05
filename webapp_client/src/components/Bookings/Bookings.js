@@ -26,7 +26,17 @@ const Bookings = () => {
   const [locations, setLocations] = useState([]);
   const [vehicles, setVehicles] = useState(vehiclesData);
 
-  // Fetch data (backend or mock)
+  // --- Helper function (renamed from useMockData) ---
+  const loadMockData = () => {
+    const data = generateBookings();
+    setBookings(data);
+    setFilteredBookings(data);
+    setLocations([...new Set(data.map(b => b.location))]);
+    setVehicles(vehiclesData);
+    setLoading(false);
+  };
+
+  // --- Fetch data (backend or mock) ---
   useEffect(() => {
     const fetchData = async () => {
       if (USE_BACKEND) {
@@ -58,29 +68,22 @@ const Bookings = () => {
           setVehicles(resVehicles.data.length ? resVehicles.data : vehiclesData);
         } catch (err) {
           console.error('Error fetching backend data:', err);
-          useMockData();
+          loadMockData(); // ✅ renamed function
         } finally {
           setLoading(false);
         }
       } else {
-        useMockData();
+        loadMockData();
       }
-    };
-
-    const useMockData = () => {
-      const data = generateBookings();
-      setBookings(data);
-      setFilteredBookings(data);
-      setLocations([...new Set(data.map(b => b.location))]);
-      setVehicles(vehiclesData);
-      setLoading(false);
     };
 
     fetchData();
   }, []);
 
-  // Filter bookings when filters change
-  useEffect(() => { filterBookings(); }, [filters, bookings]);
+  // --- Filter bookings ---
+  useEffect(() => {
+    filterBookings();
+  }, [filters, bookings]);
 
   const filterBookings = () => {
     let result = bookings;
@@ -98,23 +101,23 @@ const Bookings = () => {
 
   const clearFilters = () => setFilters({ date: '', time: '', location: '', status: 'all' });
 
-  const handleViewDetails = (booking) => { setSelectedBooking(booking); setShowBookingModal(true); };
+  const handleViewDetails = (booking) => {
+    setSelectedBooking(booking);
+    setShowBookingModal(true);
+  };
 
   const handleCancelBooking = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this reservation?')) return;
 
     if (USE_BACKEND) {
       try {
-        // Call backend API to delete reservation
         await API.delete(`/api/reservations/${id}`);
-        // Remove from frontend state
         setBookings(prev => prev.filter(b => b.id !== id));
       } catch (err) {
         console.error('Failed to cancel booking:', err);
         alert('Failed to cancel reservation on backend.');
       }
     } else {
-      // Mock data fallback
       setBookings(prev => prev.filter(b => b.id !== id));
     }
   };
@@ -122,7 +125,7 @@ const Bookings = () => {
   const handleBackToDashboard = () => navigate('/dashboard');
   const handleCreateBooking = () => setShowCreateModal(true);
 
-  // Prepare booked slots per location
+  // --- Booked slots per location ---
   const bookedSlots = {};
   bookings.forEach(b => {
     if (!bookedSlots[b.location]) bookedSlots[b.location] = [];
@@ -130,7 +133,6 @@ const Bookings = () => {
   });
 
   const handleSaveBooking = async (newBooking) => {
-    // Calculate amount
     const durationNum = Number(newBooking.duration) || 0;
     newBooking.amount = durationNum * HOURLY_RATE;
 
@@ -183,7 +185,11 @@ const Bookings = () => {
           path="/"
           element={
             <>
-              <HeaderPages title="Reservations" filteredBookings={filteredBookings} onBack={handleBackToDashboard} />
+              <HeaderPages
+                title="Reservations"
+                filteredBookings={filteredBookings}
+                onBack={handleBackToDashboard}
+              />
 
               <FiltersSection
                 filters={filters}
@@ -215,8 +221,6 @@ const Bookings = () => {
             </>
           }
         />
-
-        {/* Nested route inside Bookings */}
         <Route path="vehicle-management" element={<VehicleManagement />} />
       </Routes>
     </div>

@@ -32,13 +32,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const Color cardColor = Colors.white; // White cards
   static const Color textColor = Color(0xFF1F2937); // Dark text
   static const Color textSecondaryColor = Color(0xFF6B7280); // Gray text
-  // Professional accent (charm) for action tiles
-  static const Color charm = Color(0xFF8B5CF6); // Violet
 
   Map<String, dynamic> _userProfile = {};
   bool _isEditing = false;
   String? _profileImagePath;
   Uint8List? _profileImageBytes;
+  bool _hasProfilePicture = false;
 
   late TextEditingController _nameController;
   late TextEditingController _emailController;
@@ -50,64 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<Offset> _slideAnimation;
 
   bool _pushEnabled = false;
-
-  // Notification data
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'date': 'Today',
-      'items': [
-        {
-          'title': 'Meeting Zoom Call',
-          'description': 'Landing page Admin Panel Meeting.',
-          'time': '10:30 AM',
-        },
-        {
-          'title': 'Task Complete',
-          'description': 'You have successfully completed your task.',
-          'time': '09:15 AM',
-        },
-      ],
-    },
-    {
-      'date': 'Yesterday',
-      'items': [
-        {
-          'title': 'Progress Report',
-          'description': 'Progress rate for your task see your task..',
-          'time': '04:45 PM',
-        },
-        {
-          'title': 'Task Complete',
-          'description': 'You have successfully completed your task.',
-          'time': '02:30 PM',
-        },
-        {
-          'title': 'Update App',
-          'description': 'John has made a payment on helical.',
-          'time': '11:20 AM',
-        },
-      ],
-    },
-    {
-      'date': '28 June, 2025',
-      'items': [
-        {
-          'title': 'Al Create Task',
-          'description': 'You have successfully completed your task.',
-          'time': '03:15 PM',
-          'isImportant': true,
-        },
-        {
-          'title': 'Update App',
-          'description': 'John has made a payment on helical.',
-          'time': '10:45 AM',
-          'isImportant': true,
-        },
-      ],
-    },
-  ];
-
-  int _currentTabIndex = 0; // 0 for Notifications, 1 for Profile
 
   @override
   void initState() {
@@ -182,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         _emailController.text = data['email'] ?? '';
         _phoneController.text = data['phone'] ?? '';
       });
-
       _syncVehiclesFromBackend(data);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -192,25 +132,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _syncVehiclesFromBackend(Map<String, dynamic> data) {
-    final vn = data['vehicle_number'];
-    final vt = data['vehicle_type'];
-
-    if (vn != null &&
-        vn is String &&
-        vn.isNotEmpty &&
-        vn != 'N/A' &&
-        vt != null &&
-        vt is String &&
-        vt.isNotEmpty &&
-        vt != 'N/A') {
-      UserData.setVehicles([
-        {
-          'plate_number': vn,
-          'type': vt,
-          'is_primary': true,
-          'id': '1',
-        }
-      ]);
+    if (data['vehicles'] != null && data['vehicles'] is List) {
+      final vehiclesList = List<Map<String, dynamic>>.from(data['vehicles']);
+      UserData.setVehicles(vehiclesList);
     } else {
       UserData.setVehicles([]);
     }
@@ -221,45 +145,58 @@ class _ProfileScreenState extends State<ProfileScreen>
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
+
     try {
-      if (kIsWeb) {
-        final bytes = await image.readAsBytes();
-        if (bytes.isEmpty) throw Exception('Selected image is empty');
-        setState(() {
-          _profileImageBytes = bytes;
-          _profileImagePath = null;
-        });
-        UserData.setProfileImageBase64(base64Encode(bytes));
-        UserData.setProfileImage(null);
-      } else {
-        setState(() {
-          _profileImagePath = image.path;
-          _profileImageBytes = null;
-        });
-        UserData.setProfileImage(image.path);
-        final bytes = await File(image.path).readAsBytes();
-        if (bytes.isNotEmpty) {
+      final result = await UserService.updateProfilePicture(File(image.path));
+
+      if (result['success'] == true) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _profileImageBytes = bytes;
+            _profileImagePath = null;
+            _hasProfilePicture = true;
+          });
           UserData.setProfileImageBase64(base64Encode(bytes));
+          UserData.setProfileImage(null);
+        } else {
+          setState(() {
+            _profileImagePath = image.path;
+            _profileImageBytes = null;
+            _hasProfilePicture = true;
+          });
+          UserData.setProfileImage(image.path);
+          final bytes = await File(image.path).readAsBytes();
+          if (bytes.isNotEmpty) {
+            UserData.setProfileImageBase64(base64Encode(bytes));
+          }
         }
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Profile picture updated successfully'),
-              ],
+
+        // Reload user data to get updated profile picture from backend
+        _loadUserData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Profile picture updated successfully'),
+                ],
+              ),
+              backgroundColor: secondaryColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
             ),
-            backgroundColor: secondaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+          );
+        }
+      } else {
+        throw Exception(
+            result['message'] ?? 'Failed to update profile picture');
       }
     } catch (e) {
       if (mounted) {
@@ -274,7 +211,69 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  // Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    try {
+      final result = await UserService.removeProfilePicture();
+
+      if (result['success'] == true) {
+        setState(() {
+          _profileImagePath = null;
+          _profileImageBytes = null;
+          _hasProfilePicture = false;
+        });
+        UserData.setProfileImage(null);
+        UserData.setProfileImageBase64(null);
+
+        // Reload user data to get updated state from backend
+        _loadUserData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Profile picture removed successfully'),
+                ],
+              ),
+              backgroundColor: secondaryColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+      } else {
+        throw Exception(
+            result['message'] ?? 'Failed to remove profile picture');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove profile picture: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   ImageProvider _buildProfileImageProvider() {
+    // Check if we have a profile picture from backend
+    if (_userProfile['profile_picture'] != null &&
+        _userProfile['profile_picture'].isNotEmpty) {
+      try {
+        return MemoryImage(base64Decode(_userProfile['profile_picture']));
+      } catch (_) {}
+    }
+
+    // Check local storage
     if (kIsWeb) {
       if (_profileImageBytes != null && _profileImageBytes!.isNotEmpty) {
         return MemoryImage(_profileImageBytes!);
@@ -285,168 +284,28 @@ class _ProfileScreenState extends State<ProfileScreen>
           return MemoryImage(base64Decode(base64Data));
         } catch (_) {}
       }
-      return const AssetImage('assets/images/avatar_placeholder.png');
-    }
-
-    if (_profileImagePath != null && _profileImagePath!.isNotEmpty) {
-      try {
-        return FileImage(File(_profileImagePath!));
-      } catch (_) {}
-    }
-    final base64Data = UserData.getProfileImageBase64();
-    if (base64Data != null && base64Data.isNotEmpty) {
-      try {
-        return MemoryImage(base64Decode(base64Data));
-      } catch (_) {}
-    }
-    final path = UserData.getProfileImage();
-    try {
-      if (path != null && path.isNotEmpty && File(path).existsSync()) {
-        return FileImage(File(path));
+    } else {
+      if (_profileImagePath != null && _profileImagePath!.isNotEmpty) {
+        try {
+          return FileImage(File(_profileImagePath!));
+        } catch (_) {}
       }
-    } catch (_) {}
+      final base64Data = UserData.getProfileImageBase64();
+      if (base64Data != null && base64Data.isNotEmpty) {
+        try {
+          return MemoryImage(base64Decode(base64Data));
+        } catch (_) {}
+      }
+      final path = UserData.getProfileImage();
+      try {
+        if (path != null && path.isNotEmpty && File(path).existsSync()) {
+          return FileImage(File(path));
+        }
+      } catch (_) {}
+    }
+
+    // Fallback to placeholder
     return const AssetImage('assets/images/avatar_placeholder.png');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: cardColor,
-        foregroundColor: textColor,
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: textColor),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const DashboardScreen()),
-            );
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: textColor),
-            onPressed: _navigateToNotifications,
-          ),
-        ],
-      ),
-      body: _buildProfileTab(),
-    );
-  }
-
-  Widget _buildNotificationsTab() {
-    return ListView.builder(
-      itemCount: _notifications.length,
-      itemBuilder: (context, index) {
-        final notificationGroup = _notifications[index];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                notificationGroup['date'],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ...notificationGroup['items'].map<Widget>((item) {
-              return _buildNotificationItem(item);
-            }).toList(),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildNotificationItem(Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: item['isImportant'] == true
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: item['isImportant'] == true
-                        ? Colors.blue
-                        : Colors.black,
-                  ),
-                ),
-              ),
-              Text(
-                item['time'],
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item['description'],
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
-          _buildProfileHeader(),
-          const SizedBox(height: 24),
-          _buildStatsCards(),
-          const SizedBox(height: 24),
-          _buildPersonalInfoCard(),
-          const SizedBox(height: 24),
-          _buildQuickActionsGrid(),
-          const SizedBox(height: 24),
-          _buildSettingsCard(),
-          const SizedBox(height: 24),
-          _buildLogoutButton(),
-          const SizedBox(height: 30),
-        ],
-      ),
-    );
   }
 
   Widget _buildProfileHeader() {
@@ -494,9 +353,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Positioned(
                         bottom: 0,
                         right: 0,
-                        child: GestureDetector(
-                          onTap: _pickProfileImage,
-                          child: Container(
+                        child: PopupMenuButton<String>(
+                          icon: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: secondaryColor,
@@ -509,6 +367,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                               size: 16,
                             ),
                           ),
+                          onSelected: (value) {
+                            if (value == 'take_photo') {
+                              _pickProfileImage();
+                            } else if (value == 'remove_photo' &&
+                                _hasProfilePicture) {
+                              _removeProfilePicture();
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'take_photo',
+                              child: Row(
+                                children: const [
+                                  Icon(Icons.photo_camera, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Change Photo'),
+                                ],
+                              ),
+                            ),
+                            if (_hasProfilePicture)
+                              PopupMenuItem<String>(
+                                value: 'remove_photo',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.delete,
+                                        size: 20, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Remove Photo',
+                                        style: TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -772,9 +663,63 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildVehicleSection() {
-    final primary = UserData.getPrimaryVehicle();
-    final others =
-        UserData.vehicles.where((v) => v['is_primary'] != true).toList();
+    // Get vehicles from backend response
+    final vehicles = _userProfile['vehicles'] ?? [];
+
+    if (vehicles.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Vehicle Registration',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: const Center(
+              child: Text(
+                'No vehicles registered',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _showAddVehicleDialog,
+              style: TextButton.styleFrom(
+                backgroundColor: secondaryColor.withOpacity(0.1),
+                foregroundColor: secondaryColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Your First Vehicle'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // First vehicle is always primary (based on backend logic)
+    final primary = vehicles[0];
+    final others = vehicles.length > 1 ? vehicles.sublist(1) : [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -786,85 +731,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
         const SizedBox(height: 8),
-        // Primary (non-editable)
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.directions_car_rounded, color: primaryColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Primary Registration',
-                        style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(
-                      primary != null ? primary['plate_number'] : 'Not set',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text('Primary', style: TextStyle(color: primaryColor)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Additional vehicles list
+
+        // Primary vehicle (first vehicle) - cannot be deleted
+        _buildVehicleCard(primary, isPrimary: true, canDelete: false),
+
+        // Other vehicles (can be deleted)
         if (others.isNotEmpty)
-          ...others.map((v) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.local_offer_outlined, color: Colors.grey),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        v['plate_number'],
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        UserData.removeVehicle(v['id']);
-                        setState(() {});
-                      },
-                    ),
-                  ],
-                ),
-              )),
+          ...others.map(
+              (v) => _buildVehicleCard(v, isPrimary: false, canDelete: true)),
+
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
@@ -878,16 +753,102 @@ class _ProfileScreenState extends State<ProfileScreen>
                   borderRadius: BorderRadius.circular(10)),
             ),
             icon: const Icon(Icons.add),
-            label: const Text('Add Vehicle'),
+            label: const Text('Add Another Vehicle'),
           ),
         ),
       ],
     );
   }
 
+  Widget _buildVehicleCard(Map<String, dynamic> vehicle,
+      {bool isPrimary = false, bool canDelete = true}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isPrimary ? Colors.grey[100] : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.directions_car_rounded, color: primaryColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isPrimary)
+                  const Text('Primary Registration (Cannot be deleted)',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  vehicle['plate_number'],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                Text(
+                  vehicle['type'] ?? 'Car',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isPrimary)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text('Primary', style: TextStyle(color: primaryColor)),
+            ),
+          if (!isPrimary && canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                // Use vehicle_id from backend response
+                final result = await UserService.removeVehicle(
+                    vehicle['vehicle_id'].toString());
+                if (result['success'] == true) {
+                  // Reload user data to get updated vehicle list
+                  _loadUserData();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Vehicle removed successfully')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text(result['message'] ?? 'Failed to remove vehicle'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
   void _showAddVehicleDialog() {
     final plateController = TextEditingController();
     String type = 'Car';
+
     showDialog(
       context: context,
       builder: (context) {
@@ -923,18 +884,36 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final plate = plateController.text.trim();
                 if (plate.isEmpty) return;
-                UserData.addVehicle({
-                  'plate_number': plate,
-                  'type': type,
-                });
-                setState(() {});
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vehicle added')),
+
+                final result = await UserService.addVehicle(
+                  plateNumber: plate,
+                  type: type,
                 );
+
+                if (result['success'] == true) {
+                  // Update local data
+                  _syncVehiclesFromBackend(result['data']);
+                  setState(() {});
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Vehicle added successfully')),
+                    );
+                  }
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              result['message'] ?? 'Failed to add vehicle')),
+                    );
+                  }
+                }
               },
               child: const Text('Add'),
             ),
@@ -1307,33 +1286,30 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _saveInfo() async {
-    setState(() => _isEditing = false);
+    // Simply set editing to false and try to save
+    setState(() {
+      _isEditing = false;
+    });
 
-    final primaryVehicle = UserData.getPrimaryVehicle();
     final result = await UserService.updateProfile(
       name: _nameController.text,
       email: _emailController.text,
       phone: _phoneController.text,
-      vehicleNumber: primaryVehicle?['plate_number'],
-      vehicleType: primaryVehicle?['type'],
     );
 
-    if (result['success']) {
-      final newData = result['data'];
-      setState(() {
-        _userProfile = newData;
-        _nameController.text = newData['name'] ?? '';
-        _emailController.text = newData['email'] ?? '';
-        _phoneController.text = newData['phone'] ?? '';
-      });
-
-      _syncVehiclesFromBackend(newData);
+    if (result['success'] == true) {
+      // Update local state with the new data from backend
+      if (result['data'] != null) {
+        setState(() {
+          _userProfile = result['data'];
+        });
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
+        SnackBar(content: Text('Profile updated successfully!')),
       );
     } else {
-      // Revert on failure
+      // If failed, go back to editing mode
       setState(() {
         _isEditing = true;
       });
@@ -1444,4 +1420,62 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _navigateToSettings() {}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: cardColor,
+        foregroundColor: textColor,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: textColor),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            );
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: textColor),
+            onPressed: _navigateToNotifications,
+          ),
+        ],
+      ),
+      body: _buildProfileTab(),
+    );
+  }
+
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        children: [
+          _buildProfileHeader(),
+          const SizedBox(height: 24),
+          _buildStatsCards(),
+          const SizedBox(height: 24),
+          _buildPersonalInfoCard(),
+          const SizedBox(height: 24),
+          _buildQuickActionsGrid(),
+          const SizedBox(height: 24),
+          _buildSettingsCard(),
+          const SizedBox(height: 24),
+          _buildLogoutButton(),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
 }

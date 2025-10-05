@@ -6,47 +6,44 @@ import threading
 from ..config import EMAIL_FROM, EMAIL_PASSWORD, SMTP_SERVER, SMTP_PORT
 
 
-def send_email(to_email: str, subject: str, body: str):
+def send_email(to_email: str, subject: str, body: str, reply_to: str = None):
     """
-    Send email using SMTP
+    Send email using Gmail SMTP. Optional reply-to header.
     """
     try:
-        # Create message
         msg = MIMEMultipart()
-        msg['From'] = EMAIL_FROM
-        msg['To'] = to_email
-        msg['Subject'] = subject
+        msg["From"] = EMAIL_FROM
+        msg["To"] = to_email
+        msg["Subject"] = subject
 
-        msg.attach(MIMEText(body, 'plain'))
+        # Set Reply-To header if provided
+        if reply_to:
+            msg["Reply-To"] = reply_to
 
-        # Create server connection and send
+        msg.attach(MIMEText(body, "plain"))
+
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(EMAIL_FROM, EMAIL_PASSWORD)
-        text = msg.as_string()
-        server.sendmail(EMAIL_FROM, to_email, text)
+        server.sendmail(EMAIL_FROM, to_email, msg.as_string())
         server.quit()
 
-        print(f"Email sent to {to_email}")
+        print(f"Email sent successfully to {to_email}")
         return True
-
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {e}")
+        print(f"Failed to send email: {e}")
         return False
 
 
 def send_email_async(to_email: str, subject: str, body: str):
     """
-    Send email in background thread
+    Run send_email in a separate thread
     """
     try:
-        email_thread = threading.Thread(
-            target=send_email,
-            args=(to_email, subject, body),
-            daemon=True
+        thread = threading.Thread(
+            target=send_email, args=(to_email, subject, body), daemon=True
         )
-        email_thread.start()
-        print(f"Email sending started for {to_email}")
+        thread.start()
         return True
     except Exception as e:
         print(f"Failed to start email thread: {e}")

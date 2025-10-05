@@ -1,20 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Body, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import base64
 
 from ..schemas.user_schema import UserProfileOut, UserRole, UserCreate
+from ..schemas.vehicle_schema import VehicleCreate
 from ..models.user_model import User, UserStatus
 from ..services.user_services import (
     get_current_user,
     require_admin,
     get_user_by_id,
+    get_user_profile_with_vehicles,
     update_user_profile,
+    update_user_profile_picture,
     admin_update_user,
     get_all_users,
     delete_user,
     create_user,
     toggle_user_status
 )
+from ..services.vehicle_services import create_vehicle, delete_vehicle, get_vehicle_by_plate
 from ..services.notification_services import create_notification
 from ..database import get_db
 
@@ -23,78 +28,327 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 
 # PROFILE ROUTES
 @router.get("/profile", response_model=UserProfileOut)
-def get_profile(current_user: User = Depends(get_current_user)):
+def get_profile(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     """
     Get current user profile including vehicle info.
     """
-    # Get primary vehicle (assume first one for now)
-    primary_vehicle = current_user.vehicles[0] if current_user.vehicles else None
+    try:
+        profile_data = get_user_profile_with_vehicles(db, current_user.user_id)
+        if not profile_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User profile not found"
+            )
 
-    return UserProfileOut.from_orm(current_user).copy(update={
-        "vehicle_number": primary_vehicle.plate_number if primary_vehicle else None,
-        "vehicle_type": primary_vehicle.type if primary_vehicle else None
-    })
+        # Use the custom from_orm if available, otherwise create directly
+        try:
+            return UserProfileOut.from_orm(current_user)
+        except:
+            return UserProfileOut(**profile_data)
+
+    except Exception as e:
+        print(f"Profile route error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load profile: {str(e)}"
+        )
 
 
-@router.put("/profile/update", response_model=UserProfileOut)
+@router.put("/profile/update")
 async def update_profile(
-    name: Optional[str] = Form(None),
-    email: Optional[str] = Form(None),
-    phone: Optional[str] = Form(None),
-    vehicle_number: Optional[str] = Form(None),
-    vehicle_type: Optional[str] = Form(None),
-    password: Optional[str] = Form(None),
-    profile_picture: Optional[UploadFile] = File(None),
-    remove_picture: bool = Form(False),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+        name: Optional[str] = Form(None),
+        email: Optional[str] = Form(None),
+        phone: Optional[str] = Form(None),
+        password: Optional[str] = Form(None),
+        profile_picture: Optional[UploadFile] = File(None),
+        profile_picture_base64: Optional[str] = Form(None),  # For web
+        remove_picture: bool = Form(False),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
 ):
     """
     Update current user profile.
     """
-    # Update user
-    updated_user = update_user_profile(
-        db, current_user.user_id,
-        name=name,
-        email=email,
-        mobile=phone,  # will handle below
-        password=password,
-        profile_picture=await profile_picture.read() if profile_picture else None,
-        remove_picture=remove_picture
-    )
+    try:
+        # Handle profile picture
+        profile_picture_bytes = None
 
-    if not updated_user:
-        raise HTTPException(status_code=400, detail="Failed to update profile")
+        if profile_picture_base64:
+            # Web base64 image
+            if profile_picture_base64.startswith('data:'):
+                profile_picture_base64 = profile_picture_base64.split(',')[1]
+            profile_picture_bytes = base64.b64decode(profile_picture_base64)
+        elif profile_picture:
+            # Mobile file upload
+            profile_picture_bytes = await profile_picture.read()
 
-    # Update vehicle
-    if vehicle_number is not None or vehicle_type is not None:
-        if current_user.vehicles:
-            # Update first vehicle
-            v = current_user.vehicles[0]
-            if vehicle_number is not None:
-                v.plate_number = vehicle_number
-            if vehicle_type is not None:
-                v.type = vehicle_type
-        elif vehicle_number and vehicle_type:
-            # Create new vehicle
-            from ..models.vehicle_model import Vehicle
-            new_v = Vehicle(
-                user_id=current_user.user_id,
-                plate_number=vehicle_number,
-                type=vehicle_type
+        # Validate file size if there's a picture
+        if profile_picture_bytes and len(profile_picture_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Profile picture too large. Maximum size is 5MB."
             )
-            db.add(new_v)
 
-        db.commit()
-        db.refresh(current_user)
+        # Update user profile
+        updated_user = update_user_profile(
+            db=db,
+            user_id=current_user.user_id,
+            name=name,
+            email=email,
+            phone=phone,
+            password=password,
+            profile_picture=profile_picture_bytes,
+            remove_picture=remove_picture
+        )
 
-    # Re-fetch for response
-    primary_vehicle = current_user.vehicles[0] if current_user.vehicles else None
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update profile"
+            )
 
-    return UserProfileOut.from_orm(current_user).copy(update={
-        "vehicle_number": primary_vehicle.plate_number if primary_vehicle else None,
-        "vehicle_type": primary_vehicle.type if primary_vehicle else None
-    })
+        # Get updated profile data
+        profile_data = get_user_profile_with_vehicles(db, current_user.user_id)
+
+        return {
+            "success": True,
+            "data": UserProfileOut(**profile_data),
+            "message": "Profile updated successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {str(e)}"
+        )
+
+
+@router.post("/profile/vehicles-add")
+async def add_vehicle_to_profile(
+        plate_number: str = Form(...),
+        vehicle_type: str = Form(...),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+    Add a new vehicle to user's profile.
+    """
+    try:
+        # Check if vehicle already exists for any user
+        existing_vehicle = get_vehicle_by_plate(plate_number, db)
+        if existing_vehicle:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vehicle with this plate number already exists"
+            )
+
+        # Create vehicle using existing vehicle service
+        vehicle_data = VehicleCreate(
+            plate_number=plate_number,
+            type=vehicle_type,
+            user_id=current_user.user_id
+        )
+
+        new_vehicle = create_vehicle(vehicle_data, db)
+
+        # Get updated profile
+        profile_data = get_user_profile_with_vehicles(db, current_user.user_id)
+
+        return {
+            "success": True,
+            "data": UserProfileOut(**profile_data),
+            "message": "Vehicle added successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add vehicle: {str(e)}"
+        )
+
+
+@router.delete("/profile/vehicles-remove/{vehicle_id}")
+async def remove_vehicle_from_profile(
+        vehicle_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+    Remove a vehicle from user's profile.
+    """
+    try:
+        # Use existing vehicle service to delete
+        delete_vehicle(vehicle_id, db)
+
+        # Get updated profile
+        profile_data = get_user_profile_with_vehicles(db, current_user.user_id)
+
+        return {
+            "success": True,
+            "data": UserProfileOut(**profile_data),
+            "message": "Vehicle removed successfully"
+        }
+
+    except HTTPException as he:
+        if he.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found"
+            )
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to remove vehicle: {str(e)}"
+        )
+
+
+@router.put("/profile/update-picture")
+async def update_profile_picture(
+        profile_picture: UploadFile = File(...),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+    Update only the profile picture.
+    """
+    try:
+        profile_picture_bytes = await profile_picture.read()
+
+        # Validate file size (max 5MB)
+        if len(profile_picture_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Profile picture too large. Maximum size is 5MB."
+            )
+
+        # Validate file type
+        if profile_picture.content_type not in ['image/jpeg', 'image/png', 'image/jpg']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JPEG and PNG are allowed."
+            )
+
+        updated_user = update_user_profile_picture(
+            db=db,
+            user_id=current_user.user_id,
+            profile_picture=profile_picture_bytes
+        )
+
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update profile picture"
+            )
+
+        # Convert to base64 for response
+        profile_picture_base64 = base64.b64encode(profile_picture_bytes).decode('utf-8')
+
+        return {
+            "success": True,
+            "message": "Profile picture updated successfully",
+            "profile_picture": profile_picture_base64
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile picture: {str(e)}"
+        )
+
+
+@router.put("/profile/update-picture-base64")
+async def update_profile_picture_base64(
+        profile_picture_base64: str = Form(...),
+        mime_type: str = Form("image/jpeg"),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+    Update profile picture using base64 (for web).
+    """
+    try:
+        # Remove data URL prefix if present
+        if profile_picture_base64.startswith('data:'):
+            profile_picture_base64 = profile_picture_base64.split(',')[1]
+
+        # Decode base64 to bytes
+        profile_picture_bytes = base64.b64decode(profile_picture_base64)
+
+        # Validate file size (max 5MB)
+        if len(profile_picture_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Profile picture too large. Maximum size is 5MB."
+            )
+
+        updated_user = update_user_profile_picture(
+            db=db,
+            user_id=current_user.user_id,
+            profile_picture=profile_picture_bytes
+        )
+
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update profile picture"
+            )
+
+        return {
+            "success": True,
+            "message": "Profile picture updated successfully",
+            "profile_picture": profile_picture_base64
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile picture: {str(e)}"
+        )
+
+
+@router.delete("/profile/delete-picture")
+async def remove_profile_picture(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+    Remove profile picture.
+    """
+    try:
+        updated_user = update_user_profile_picture(
+            db=db,
+            user_id=current_user.user_id,
+            remove_picture=True
+        )
+
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to remove profile picture"
+            )
+
+        return {
+            "success": True,
+            "message": "Profile picture removed successfully"
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to remove profile picture: {str(e)}"
+        )
 
 
 # ADMIN USER MANAGEMENT

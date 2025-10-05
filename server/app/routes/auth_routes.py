@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 
 from ..schemas.user_schema import (
-    DriverSignUp, UserCreate, UserOut, SignInRequest, TokenResponse, TokenWithUser,
+    DriverSignUp, AdminSignUp, UserOut, SignInRequest, TokenResponse, TokenWithUser,
     PasswordResetRequest, PasswordResetVerify, PasswordResetConfirm
 )
 from ..services.auth_services import (
@@ -38,8 +38,8 @@ def driver_signup(driver: DriverSignUp, db: Session = Depends(get_db)):
     return new_driver
 
 
-@router.post("/signup", response_model=UserOut)
-def signup(user: UserCreate, db: Session = Depends(get_db)):
+@router.post("/admin/signup", response_model=UserOut)
+def signup(user: AdminSignUp, db: Session = Depends(get_db)):
     try:
         new_admin = create_admin(db, user)
     except ValueError as e:

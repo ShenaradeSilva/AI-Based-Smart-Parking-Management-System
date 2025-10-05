@@ -156,14 +156,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           items: _countryCodes
                               .map((country) => DropdownMenuItem<CountryCode>(
                                     value: country,
-                                    child: Text("${country.code} (${country.name})"),
+                                    child: Text(
+                                        "${country.code} (${country.name})"),
                                   ))
                               .toList(),
                           selectedItemBuilder: (context) => _countryCodes
                               .map((country) => Text(country.code))
                               .toList(),
                           onChanged: (country) => setState(() {
-                            _selectedCountryCode = country ?? CountryCodes.defaultCountry;
+                            _selectedCountryCode =
+                                country ?? CountryCodes.defaultCountry;
                           }),
                         ),
                       ),
@@ -425,10 +427,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // Concatenate full country code + entered number
+      final mobileWithCode =
+          '${_selectedCountryCode.code}${_mobileController.text.trim()}';
+      // Note: use .code or .digits depending on your CountryCode class
+
       final resp = await AuthService.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
-        '${_selectedCountryCode}${_mobileController.text.trim()}',
+        mobileWithCode, // send full number here
         _vehicleController.text.trim(),
         _selectedVehicleType,
         _passwordController.text,
@@ -440,11 +447,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         UserData.updateUserData({
           'name': user['name'] ?? _nameController.text,
           'email': user['email'] ?? _emailController.text,
-          'phone': user['mobile'] ??
-              '${_selectedCountryCode}${_mobileController.text}',
+          'phone': user['mobile'] ?? mobileWithCode,
           'vehicle': user['vehicle_number'] ?? _vehicleController.text,
-          'vehicle_type':
-              user['vehicle_type'] ?? _selectedVehicleType, 
+          'vehicle_type': user['vehicle_type'] ?? _selectedVehicleType,
         });
 
         if (!mounted) return;
@@ -452,7 +457,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(content: Text('Registration successful')),
         );
 
-        // Navigate to Dashboard to show real data
+        // Navigate to Login Screen
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),

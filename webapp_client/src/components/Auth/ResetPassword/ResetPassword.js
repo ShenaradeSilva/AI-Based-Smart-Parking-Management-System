@@ -16,71 +16,82 @@ const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
 
   const navigate = useNavigate();
 
+  // Step 1: Send verification code to email
   const handleEmailSubmit = async () => {
-    if (!email) return alert("Please enter your email");
-
+    if (!email) return setServerError("Please enter your email");
+    setServerError("");
     setIsLoading(true);
     try {
       await API.post("/api/auth/reset-password/request", { email });
       setStep(2);
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to send verification code");
+      setServerError(err.response?.data?.detail || "Failed to send verification code");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Step 2: Verify code
   const handleCodeSubmit = async () => {
-    if (code.length !== 4) return alert("Please enter the 4-digit code");
-
+    if (code.length !== 4) return setServerError("Please enter the 4-digit code");
+    setServerError("");
     setIsLoading(true);
     try {
       await API.post("/api/auth/reset-password/verify", { email, code });
       setStep(3);
     } catch (err) {
-      alert(err.response?.data?.detail || "Invalid code");
+      setServerError(err.response?.data?.detail || "Invalid code");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Step 3: Reset password
   const handlePasswordSubmit = async () => {
-    if (!newPassword || newPassword !== confirmPassword)
-      return alert("Passwords do not match");
-
+    if (!newPassword || newPassword !== confirmPassword) {
+      return setServerError("Passwords do not match");
+    }
+    setServerError("");
     setIsLoading(true);
     try {
-      await API.post("/api/auth/reset-password/confirm", { email, code, new_password: newPassword });
+      await API.post("/api/auth/reset-password/confirm", {
+        email,
+        code,
+        new_password: newPassword
+      });
       alert("Password reset successful!");
       navigate("/signin");
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to reset password");
+      setServerError(err.response?.data?.detail || "Failed to reset password");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    if (!email) return alert("Please enter your email first");
-
+    if (!email) return setServerError("Please enter your email first");
+    setServerError("");
     setIsLoading(true);
     try {
       await API.post("/api/auth/reset-password/request", { email });
       alert("Verification code sent again!");
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to resend code");
+      setServerError(err.response?.data?.detail || "Failed to resend code");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleClose = () => navigate("/signin");
+
   return (
     <div className="auth-container">
       <div className="auth-card reset-card">
-        <button className="auth-close-btn" onClick={() => navigate("/signin")}>
+        <button className="auth-close-btn" onClick={handleClose}>
           <CloseIcon />
         </button>
 
@@ -93,33 +104,24 @@ const ResetPassword = () => {
 
         {/* Step Indicator */}
         <div className="step-indicator">
-          <div className="step-container">
-            <div className={`step ${step >= 1 ? 'active' : ''}`}>
-              <span>1</span>
-            </div>
-            <div className="step-label">Email</div>
-          </div>
-
-          <div className="step-connector"></div>
-
-          <div className="step-container">
-            <div className={`step ${step >= 2 ? 'active' : ''}`}>
-              <span>2</span>
-            </div>
-            <div className="step-label">Verify</div>
-          </div>
-
-          <div className="step-connector"></div>
-
-          <div className="step-container">
-            <div className={`step ${step >= 3 ? 'active' : ''}`}>
-              <span>3</span>
-            </div>
-            <div className="step-label">Reset</div>
-          </div>
+          {[1, 2, 3].map((s) => (
+            <React.Fragment key={s}>
+              {s !== 1 && <div className="step-connector"></div>}
+              <div className="step-container">
+                <div className={`step ${step >= s ? 'active' : ''}`}>
+                  <span>{s}</span>
+                </div>
+                <div className="step-label">
+                  {s === 1 ? "Email" : s === 2 ? "Verify" : "Reset"}
+                </div>
+              </div>
+            </React.Fragment>
+          ))}
         </div>
 
-        {/* Render the appropriate step component */}
+        {serverError && <div className="server-error">{serverError}</div>}
+
+        {/* Render the current step */}
         {step === 1 && (
           <EmailStep
             email={email}
@@ -128,7 +130,6 @@ const ResetPassword = () => {
             onSubmit={handleEmailSubmit}
           />
         )}
-
         {step === 2 && (
           <CodeStep
             email={email}
@@ -139,7 +140,6 @@ const ResetPassword = () => {
             onResend={handleResendCode}
           />
         )}
-
         {step === 3 && (
           <PasswordStep
             newPassword={newPassword}

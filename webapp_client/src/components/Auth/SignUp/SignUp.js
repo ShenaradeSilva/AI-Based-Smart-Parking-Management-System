@@ -29,7 +29,7 @@ const SignUp = () => {
     confirmPassword: '',
     countryCode: '+94',
     phone: '',
-    role: 'admin', // default role
+    role: 'admin', // fixed as admin
   });
 
   const handleClose = () => navigate('/');
@@ -80,6 +80,7 @@ const SignUp = () => {
       countryCode: newCode,
       phone: prev.phone.slice(0, newDigits)
     }));
+
     if (errors.phone) setErrors(prev => clearError(prev, 'phone'));
     if (touched.phone) {
       const phoneError = validateField('mobile', formData.phone, { countryCode: newCode });
@@ -89,7 +90,7 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setTouched({ name: true, email: true, phone: true, password: true, confirmPassword: true, role: true });
+    setTouched({ name: true, email: true, phone: true, password: true, confirmPassword: true });
     if (!validateForm()) return;
 
     const fullPhone = formData.countryCode + formData.phone;
@@ -101,11 +102,11 @@ const SignUp = () => {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         phone: fullPhone || null,
-        role: formData.role, // send selected role
+        role: 'admin', // fixed role
       };
 
-      await API.post('/api/auth/signup', payload);
-      navigate('/signin');
+      await API.post('/api/auth/admin/signup', payload);
+      navigate('/signin'); // redirect to sign in after successful signup
     } catch (err) {
       setErrors(prev => ({
         ...prev,
@@ -150,7 +151,7 @@ const SignUp = () => {
             <label htmlFor="phone">Phone Number</label>
             <div className="mobile-input-container">
               <select value={formData.countryCode} onChange={handleCountryCodeChange} className="country-code-select">
-                {countryCodes.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.name})</option>)}
+                {countryCodes.map(c => <option key={c.code} value={c.code}>{c.code} ({c.name})</option>)}
               </select>
               <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} onBlur={() => handleBlur('phone')}
                 placeholder={`Enter ${requiredDigits}-digit number`} className={`mobile-number-input ${touched.phone && errors.phone ? 'error' : ''}`} required />

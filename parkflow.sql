@@ -128,7 +128,7 @@ CREATE TABLE `notification` (
   KEY `idx_user_status` (`user_id`,`status`),
   KEY `idx_created_at` (`created_at`),
   CONSTRAINT `notification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -137,7 +137,7 @@ CREATE TABLE `notification` (
 
 LOCK TABLES `notification` WRITE;
 /*!40000 ALTER TABLE `notification` DISABLE KEYS */;
-INSERT INTO `notification` VALUES (2,'Driver signup successful','success','unread','2025-10-01 12:53:30',1),(3,'Login successful','success','unread','2025-10-01 14:03:03',1),(4,'Login successful','success','unread','2025-10-01 14:10:35',1),(5,'Login successful','success','unread','2025-10-01 14:17:53',1),(6,'Login successful','success','unread','2025-10-01 14:22:29',1),(7,'Login successful','success','unread','2025-10-01 14:28:27',1),(8,'Login successful','success','unread','2025-10-01 14:31:34',1),(9,'Password reset requested','security','unread','2025-10-01 15:32:02',1),(10,'Password reset code verified','success','unread','2025-10-01 15:32:34',1),(11,'Password reset requested','security','unread','2025-10-01 15:44:18',1),(12,'Password reset code verified','success','unread','2025-10-01 15:44:43',1),(13,'Login successful','success','unread','2025-10-01 15:46:54',1),(14,'Password reset requested','security','unread','2025-10-01 15:47:15',1),(15,'Password reset code verified','success','unread','2025-10-01 15:47:29',1),(16,'Password reset requested','security','unread','2025-10-01 15:51:13',1),(17,'Password reset code verified','success','unread','2025-10-01 15:51:37',1),(18,'Password reset requested','security','unread','2025-10-01 16:35:35',1),(19,'Password reset code verified','success','unread','2025-10-01 16:36:06',1),(20,'Password reset requested','security','unread','2025-10-01 16:40:48',1),(21,'Password reset code verified','success','unread','2025-10-01 16:41:03',1),(22,'Password reset requested','security','unread','2025-10-01 16:43:20',1),(23,'Password reset code verified','success','unread','2025-10-01 16:43:42',1),(24,'Password reset requested','security','unread','2025-10-01 16:50:35',1),(25,'Password reset code verified','success','unread','2025-10-01 16:50:50',1),(26,'Password reset code verified','success','unread','2025-10-01 16:51:08',1),(27,'Password reset requested','security','unread','2025-10-01 16:55:17',1),(28,'Password reset code verified','success','unread','2025-10-01 16:55:35',1),(29,'Password reset code verified','success','unread','2025-10-01 16:55:52',1),(30,'Password reset successfully','success','unread','2025-10-01 16:55:52',1),(31,'Login successful','success','unread','2025-10-02 02:41:56',1),(32,'Login successful','success','unread','2025-10-02 02:45:15',1),(33,'Login successful','success','unread','2025-10-02 04:24:56',1),(34,'Login successful','success','unread','2025-10-02 04:34:09',1),(35,'Login successful','success','unread','2025-10-02 04:51:30',1),(36,'Login successful','success','unread','2025-10-02 05:09:03',1),(37,'Login successful','success','unread','2025-10-02 05:22:31',1),(38,'Login successful','success','unread','2025-10-02 05:28:44',1),(39,'Login successful','success','unread','2025-10-02 05:38:33',1),(40,'Login successful','success','unread','2025-10-02 05:44:51',1),(41,'Login successful','success','unread','2025-10-02 05:48:55',1),(42,'Failed login attempt detected','security','unread','2025-10-02 05:57:16',1),(43,'Login successful','success','unread','2025-10-02 05:57:26',1),(44,'Failed login attempt detected','security','unread','2025-10-02 06:46:54',1),(45,'Login successful','success','unread','2025-10-02 06:47:04',1),(46,'Login successful','success','unread','2025-10-02 06:52:26',1),(47,'Login successful','success','unread','2025-10-02 07:11:10',1),(48,'Login successful','success','unread','2025-10-02 07:38:27',1),(49,'Your profile was updated successfully','info','unread','2025-10-02 07:38:53',1),(50,'Login successful','success','unread','2025-10-02 07:56:41',1),(51,'Login successful','success','unread','2025-10-02 09:46:17',1),(52,'Your profile was updated successfully','info','unread','2025-10-02 09:46:43',1),(53,'Your profile was updated successfully','info','unread','2025-10-02 09:46:56',1),(54,'Your profile was updated successfully','info','unread','2025-10-02 09:47:04',1),(55,'Your profile was updated successfully','info','unread','2025-10-02 09:53:12',1),(56,'Login successful','success','unread','2025-10-02 10:29:00',1),(57,'Login successful','success','unread','2025-10-02 10:35:23',1),(58,'Failed login attempt detected','security','unread','2025-10-02 10:53:01',1),(59,'Login successful','success','unread','2025-10-02 10:53:10',1),(60,'Login successful','success','unread','2025-10-02 12:22:05',1),(61,'Login successful','success','unread','2025-10-02 12:27:32',1);
+INSERT INTO `notification` VALUES (1,'Signup successful','success','unread','2025-10-05 10:55:07',1),(2,'Login successful','success','unread','2025-10-05 10:55:21',1),(3,'Driver signup successful','success','unread','2025-10-05 15:30:32',2),(4,'Failed login attempt detected','security','unread','2025-10-05 15:31:22',2),(5,'Login successful','success','unread','2025-10-05 15:31:30',2),(6,'Login successful','success','unread','2025-10-05 16:54:16',2),(7,'Login successful','success','unread','2025-10-05 16:58:16',2),(8,'Login successful','success','unread','2025-10-05 17:04:38',2),(9,'Login successful','success','unread','2025-10-05 17:40:40',2),(10,'Login successful','success','unread','2025-10-05 17:44:31',2);
 /*!40000 ALTER TABLE `notification` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -302,7 +302,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `email` (`email`),
   KEY `idx_email` (`email`),
   KEY `idx_role` (`role`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -311,7 +311,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'Shenara De Silva','shenarades03@gmail.com','$2b$12$0IBlZtIsNwTU3nswv4KBtOjPnDxt1MyB/owhWoJ5l0dBZx7tEbXL.','+94774103987',NULL,'driver','active','2025-10-01 12:53:30','2025-10-01 16:55:52');
+INSERT INTO `user` VALUES (1,'Navodya Fernando','fernandonavodya3@gmail.com','$2b$12$fTnhyy2TUwl3LPY9PucxsegbWuSiU3n7QenYlFcrULejO/BJh/3CC','+94766017197',NULL,'admin','active','2025-10-05 10:55:07','2025-10-05 10:55:07'),(2,'Shenara De Silva','shenarades03@gmail.com','$2b$12$kKR1Vt3I1vCcGO4HQpSfxuYqD9.HAWGfMvedlZCujCyoq/YCoowzW','+94774103987',NULL,'driver','active','2025-10-05 15:30:31','2025-10-05 15:30:31');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -332,7 +332,7 @@ CREATE TABLE `usersession` (
   KEY `idx_expiry` (`expiry`),
   KEY `idx_user_id` (`user_id`),
   CONSTRAINT `usersession_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -341,7 +341,7 @@ CREATE TABLE `usersession` (
 
 LOCK TABLES `usersession` WRITE;
 /*!40000 ALTER TABLE `usersession` DISABLE KEYS */;
-INSERT INTO `usersession` VALUES (25,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTQxMTY1Mn0.zKGT9Ife6g94MN1ECBWnYch3JGlPy6_ePZal2jF-EKc','2025-10-02 13:27:33',1,'2025-10-02 12:27:32');
+INSERT INTO `usersession` VALUES (1,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzU5NjY1MzIwfQ.4V9g-NQtD0ofsLTEqSpp2oZzKREYm-2CNGkptiS6CNc','2025-10-05 11:55:21',1,'2025-10-05 10:55:20'),(2,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4MTg5MH0.vMPxjrHF8gXnW_NScxrtnHx3bN1Oxp6TZZy7xvEGhEc','2025-10-05 16:31:31',2,'2025-10-05 15:31:30'),(3,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4Njg1Nn0.QvBYYkq4-SrKCGsiyYvJsYa9u7wFePNXfNHaQ4UPBqI','2025-10-05 17:54:16',2,'2025-10-05 16:54:16'),(4,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4NzA5NX0.Z3u3i2Zvh-NuIAvYwYD26ezmeGqXeG1MDt-okAZy7w4','2025-10-05 17:58:16',2,'2025-10-05 16:58:15'),(5,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4NzQ3OH0.Vdx2qrRG_HFBrUKeZzUP2CCNS2aa9WDOcelc9qT4KC8','2025-10-05 18:04:38',2,'2025-10-05 17:04:38'),(6,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4OTY0MH0.KcwUuiSbbQ6ntATjPM93pmX6tUl1wOeOAvS4D2u6xBY','2025-10-05 18:40:41',2,'2025-10-05 17:40:40'),(7,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6ImRyaXZlciIsImV4cCI6MTc1OTY4OTg3MX0.pUtpi9pzXuJkqH-hV8q1nmCL463laQyYeI6mv6Ldg9s','2025-10-05 18:44:31',2,'2025-10-05 17:44:31');
 /*!40000 ALTER TABLE `usersession` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -363,7 +363,7 @@ CREATE TABLE `vehicle` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_plate_number` (`plate_number`),
   CONSTRAINT `vehicle_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -372,7 +372,7 @@ CREATE TABLE `vehicle` (
 
 LOCK TABLES `vehicle` WRITE;
 /*!40000 ALTER TABLE `vehicle` DISABLE KEYS */;
-INSERT INTO `vehicle` VALUES (4,'CAB-2254','Car',1,'2025-10-01 12:53:30');
+INSERT INTO `vehicle` VALUES (1,'CAB-2254','Car',2,'2025-10-05 15:30:31');
 /*!40000 ALTER TABLE `vehicle` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -423,4 +423,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-02 17:57:33
+-- Dump completed on 2025-10-05 23:14:32

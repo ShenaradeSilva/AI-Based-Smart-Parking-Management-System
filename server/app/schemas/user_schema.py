@@ -1,8 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 from datetime import datetime
 from ..models.user_model import UserRole
+from ..schemas.vehicle_schema import VehicleOut
 
 
 class UserStatus(str, Enum):
@@ -25,12 +26,25 @@ class DriverSignUp(BaseModel):
 
 
 # User creation (admin or self)
-class UserCreate(BaseModel):
+class AdminSignUp(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     password: Optional[str] = Field(None, min_length=6, max_length=100)  # optional if generated
     phone: Optional[str] = Field(None, max_length=50)
-    role: UserRole = UserRole.driver
+    role: UserRole = UserRole.admin
+    status: UserStatus = UserStatus.active
+    send_credentials: Optional[bool] = True
+
+    class Config:
+        from_attributes = True
+
+
+class UserCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    email: EmailStr
+    password: Optional[str] = Field(None, min_length=6, max_length=100)
+    phone: Optional[str] = Field(None, max_length=50)
+    role: UserRole = UserRole.driver  # can be overridden
     status: UserStatus = UserStatus.active
     send_credentials: Optional[bool] = True
 
@@ -118,13 +132,9 @@ class UserProfileOut(BaseModel):
     phone: Optional[str]
     role: UserRole
     status: str
-    profilePicture: Optional[str] = Field(None, alias="profile_picture")
-    join_date: Optional[datetime] = Field(None, alias="created_at")
-
-    # Add vehicle fields
-    vehicle_number: Optional[str] = None
-    vehicle_type: Optional[str] = None
+    profile_picture: Optional[str] = None
+    join_date: Optional[datetime] = None
+    vehicles: List[VehicleOut] = []
 
     class Config:
         from_attributes = True
-        populate_by_name = True

@@ -9,7 +9,6 @@ from ..models.user_model import User, UserRole, UserStatus
 from ..models.usersession_model import UserSession
 from ..models.vehicle_model import Vehicle
 from ..utils.email_service import send_welcome_email_driver, send_welcome_email_admin, send_password_reset_code, send_password_reset_success
-from ..utils.email_utils import send_email
 from ..utils.auth_utils import create_access_token
 from ..config import ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -134,9 +133,6 @@ def login_user(db: Session, email: str, password: str, platform: str = "mobile")
 
     # Generate JWT token
     token = create_access_token({"sub": str(user.user_id), "role": user.role})
-
-    # Remove old sessions
-    db.query(UserSession).filter(UserSession.user_id == user.user_id).delete()
 
     # Create new session
     expiry = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
