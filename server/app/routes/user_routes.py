@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Body, Form
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
+import bcrypt
+import secrets
 import base64
 
-from ..schemas.user_schema import UserProfileOut, UserRole, UserCreate
+from ..schemas.user_schema import UserProfileOut, UserRole, UserCreate, UserCreateResponse
 from ..schemas.vehicle_schema import VehicleCreate
 from ..models.user_model import User, UserStatus
 from ..services.user_services import (
@@ -352,7 +355,7 @@ async def remove_profile_picture(
 
 
 # ADMIN USER MANAGEMENT
-@router.get("/", response_model=List[UserProfileOut])
+@router.get("/getusers", response_model=List[UserProfileOut])
 def list_users(
     search: Optional[str] = Query(None, description="Search by name or email"),
     db: Session = Depends(get_db),
@@ -365,35 +368,52 @@ def list_users(
     return [UserProfileOut.from_orm(u) for u in users]
 
 
-@router.post("/", response_model=UserProfileOut, status_code=status.HTTP_201_CREATED)
+@router.post("/add", response_model=UserCreateResponse)
 def add_user(
-    user_data: UserCreate = Body(...),
+    user_data: UserCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
     """
-    Admin creates a new user.
+    Admin creates a new user. Auto-generates password if none is provided.
+    Returns 200 in the response body.
     """
+    # Check if email already exists
     existing_users = get_all_users(db, search=user_data.email)
     if any(u.email == user_data.email for u in existing_users):
         raise HTTPException(status_code=400, detail="Email already exists")
 
+    # Use provided password or generate a secure random one
+    password = user_data.password or secrets.token_urlsafe(10)
+
+    # Hash the password
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    # Create user
     new_user = create_user(
         db=db,
         name=user_data.name,
         email=user_data.email,
-        password=user_data.password,
+        password=hashed_password,
         phone=user_data.phone,
         role=user_data.role
     )
 
+    # Create notification for the new user
     create_notification(
         db,
         f"Admin {current_user.name} created a new user account for {new_user.name}",
         "info",
         user_id=new_user.user_id
     )
-    return UserProfileOut.from_orm(new_user)
+
+    # Return wrapped response
+    return UserCreateResponse(
+        status=200,
+        success=True,
+        message=f"User {new_user.name} created successfully",
+        data=UserProfileOut.from_orm(new_user)
+    )
 
 
 @router.put("/{user_id}/update", response_model=UserProfileOut)
@@ -449,7 +469,7 @@ def toggle_status(
     return UserProfileOut.from_orm(updated_user)
 
 
-@router.delete("/{user_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}/delete")
 def remove_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -462,14 +482,32 @@ def remove_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found or deletion failed")
 
+    # Delete user
     success = delete_user(db, user_id)
     if not success:
         raise HTTPException(status_code=404, detail="User not found or deletion failed")
 
+    # Reset auto-increment to the max user_id + 1
+    db.execute(text("ALTER TABLE `user` AUTO_INCREMENT = :next_id"), {"next_id": get_max_user_id(db) + 1})
+    db.commit()
+
+    # Notify admin
     create_notification(
         db,
-        f"Your account was deleted by admin {current_user.name}",
-        "cancellation",
-        user_id=user_id
+        message=f"You have successfully deleted user {user.name}",
+        type="info",
+        user_id=current_user.user_id
     )
-    return None
+
+    return {
+        "status": 200,
+        "success": True,
+        "message": f"User {user.name} deleted successfully"
+    }
+
+
+def get_max_user_id(db: Session) -> int:
+    """Get the current maximum user_id from the user table"""
+    result = db.execute(text("SELECT MAX(user_id) AS max_id FROM `user`"))
+    max_id = result.fetchone()[0]
+    return max_id or 0

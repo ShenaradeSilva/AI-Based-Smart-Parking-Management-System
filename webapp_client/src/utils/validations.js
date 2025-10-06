@@ -156,19 +156,30 @@ export const clearError = (errors, fieldName) => {
 
 export const validateImageFile = (file) => {
   if (!file) return 'No file selected';
-
-  const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-  if (!validTypes.includes(file.type)) return 'Only JPG, JPEG, PNG images are allowed';
-
-  const maxSizeInMB = 5;
-  if (file.size > maxSizeInMB * 1024 * 1024) return `Image size must be less than ${maxSizeInMB} MB`;
-
-  return '';
+  
+  // Check file type
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+  if (!validTypes.includes(file.type)) {
+    return 'Please select a valid image file (JPEG or PNG only)';
+  }
+  
+  // Check file size (5MB max)
+  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+  if (file.size > maxSize) {
+    return 'Image size must be less than 5MB';
+  }
+  
+  // Check file name length
+  if (file.name.length > 255) {
+    return 'File name is too long';
+  }
+  
+  return null;
 };
 
 export const maskPassword = (password) => {
   if (!password) return '';
-  return '*'.repeat(password.length);
+  return '•'.repeat(Math.min(password.length, 12));
 };
 
 // Validate a single field dynamically

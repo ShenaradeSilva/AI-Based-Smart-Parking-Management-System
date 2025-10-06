@@ -6,34 +6,26 @@ const UserList = ({
     users,
     onStatusChange,
     onDeleteUser,
-    onEditUser = () => {} // Default no-op function
+    onEditUser = () => {} // Default no-op
 }) => {
-    // Get initials for avatar placeholder
+    // Safely get initials for avatar
     const getInitials = (name) => {
-        return name
-            .split(' ')
-            .map(word => word[0])
-            .join('')
-            .toUpperCase();
+        if (!name || typeof name !== 'string') return '';
+        const parts = name.trim().split(' ').filter(Boolean);
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[1][0]).toUpperCase();
     };
 
-    // Format date safely
+    // Safely format date
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
-
         const date = new Date(dateString);
-        if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
-
-        return date.toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
+        if (isNaN(date.getTime())) return "N/A";
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
-
-
-    // Calculate "time ago"
+    // Get "time ago"
     const getTimeAgo = (dateString) => {
         if (!dateString) return "";
         const joinDate = new Date(dateString);
@@ -57,72 +49,75 @@ const UserList = ({
 
             {users.length > 0 ? (
                 <div className="user-list">
-                    {users.map(user => (
-                        <div key={user.id || user.user_id} className="user-list-item">
-                            <div className="user-avatar-container">
-                                {user.profilePicture ? (
-                                    <img
-                                        src={user.profilePicture}
-                                        alt={user.name}
-                                        className="user-avatar"
-                                    />
-                                ) : (
-                                    <div className="user-avatar-placeholder">
-                                        {getInitials(user.name)}
+                    {users.map(user => {
+                        const userId = user.user_id || user.id; // standardize ID
+                        return (
+                            <div key={userId} className="user-list-item">
+                                <div className="user-avatar-container">
+                                    {user.profilePicture ? (
+                                        <img
+                                            src={user.profilePicture}
+                                            alt={user.name || 'User'}
+                                            className="user-avatar"
+                                        />
+                                    ) : (
+                                        <div className="user-avatar-placeholder">
+                                            {getInitials(user.name)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="user-content">
+                                    <div className="user-main-info">
+                                        <h4 className="user-name">{user.name || 'N/A'}</h4>
+                                        <span className={`user-status status-${user.status || 'inactive'}`}>
+                                            {user.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
                                     </div>
-                                )}
-                            </div>
 
-                            <div className="user-content">
-                                <div className="user-main-info">
-                                    <h4 className="user-name">{user.name}</h4>
-                                    <span className={`user-status status-${user.status}`}>
-                                        {user.status === 'active' ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
+                                    <div className="user-details">
+                                        <p className="user-email">{user.email || 'N/A'}</p>
+                                        <p className="user-phone">{user.phone || 'N/A'}</p>
+                                    </div>
 
-                                <div className="user-details">
-                                    <p className="user-email">{user.email}</p>
-                                    <p className="user-phone">{user.phone}</p>
-                                </div>
+                                    <div className="user-meta">
+                                        <span className="user-role">{user.role || 'driver'}</span>
+                                        <span className="user-join-date">
+                                            Joined {formatDate(user.joinDate)} • {getTimeAgo(user.joinDate)}
+                                        </span>
+                                    </div>
 
-                                <div className="user-meta">
-                                    <span className="user-role">{user.role}</span>
-                                    <span className="user-join-date">
-                                        Joined {formatDate(user.joinDate)} • {getTimeAgo(user.joinDate)}
-                                    </span>
-                                </div>
+                                    <div className="user-actions">
+                                        <button
+                                            className="btn-action btn-edit"
+                                            onClick={() => onEditUser(user)}
+                                        >
+                                            <EditIcon /> Edit
+                                        </button>
 
-                                <div className="user-actions">
-                                    <button
-                                        className="btn-action btn-edit"
-                                        onClick={() => onEditUser(user)}
-                                    >
-                                        <EditIcon />Edit
-                                    </button>
+                                        <button
+                                            className="btn-action btn-status"
+                                            onClick={() =>
+                                                onStatusChange(
+                                                    userId,
+                                                    user.status === 'active' ? 'inactive' : 'active'
+                                                )
+                                            }
+                                        >
+                                            {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                                        </button>
 
-                                    <button
-                                        className="btn-action btn-status"
-                                        onClick={() =>
-                                            onStatusChange(
-                                                user.id || user.user_id,
-                                                user.status === 'active' ? 'inactive' : 'active'
-                                            )
-                                        }
-                                    >
-                                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                                    </button>
-
-                                    <button
-                                        className="btn-action btn-delete"
-                                        onClick={() => onDeleteUser(user.id || user.user_id)}
-                                    >
-                                        <DeleteIcon />Delete
-                                    </button>
+                                        <button
+                                            className="btn-action btn-delete"
+                                            onClick={() => onDeleteUser(userId)}
+                                        >
+                                            <DeleteIcon /> Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="no-users">

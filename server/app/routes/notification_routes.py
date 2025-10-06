@@ -9,27 +9,16 @@ from ..utils.auth_utils import decode_access_token
 router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 
-# JWT-based user extractor with debug logging
 def get_current_user(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid token format")
 
     token = authorization.split(" ")[1]
-
-    # Debug logs
-    print("=== Incoming token ===")
-    print(token)
-
     payload = decode_access_token(token)
 
     if payload is None:
-        print("=== Token decode failed ===")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    print("=== Decoded payload ===")
-    print(payload)
-
-    # Fix: support both "user_id" and "sub"
     user_id = payload.get("user_id") or payload.get("sub")
     role = payload.get("role")
 
@@ -45,23 +34,9 @@ def fetch_notifications(
         current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["user_id"]
-    role = current_user["role"]
 
-    if role == "admin":
-        all_notifications = notification_services.get_all_notifications(db)
-        filtered_notifications = []
-        for notif in all_notifications:
-            # Include signup/signin only if it belongs to this admin
-            if notif.type in ["signup", "signin"]:
-                if notif.user_id == user_id:
-                    filtered_notifications.append(notif)
-            else:
-                # Include all other notifications for admin
-                filtered_notifications.append(notif)
-        return filtered_notifications
-    else:
-        # Driver sees only their own notifications
-        return notification_services.get_user_notifications(db, user_id)
+    # Both admin and driver users ONLY see their own notifications
+    return notification_services.get_user_notifications(db, user_id)
 
 
 @router.post("/{notification_id}/read", response_model=NotificationResponse)
@@ -74,9 +49,11 @@ def mark_as_read(
     if not notif:
         raise HTTPException(status_code=404, detail="Notification not found")
 
-    if current_user["role"] != "admin" and notif.user_id != current_user["user_id"]:
+    # Users can only mark their own notifications as read
+    if notif.user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Cannot mark others' notifications as read")
 
+    # Update status and commit to database
     notif.status = "read"
     db.commit()
     db.refresh(notif)
@@ -89,20 +66,21 @@ def mark_all_as_read(
         current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["user_id"]
-    role = current_user["role"]
 
-    if role == "admin":
-        notifications = notification_services.get_all_notifications(db)
-    else:
-        notifications = notification_services.get_user_notifications(db, user_id, unread_only=True)
+    # Users can only mark their own notifications as read
+    notifications_to_update = notification_services.get_user_notifications(db, user_id, unread_only=True)
 
     updated = []
-    for notif in notifications:
-        if role != "admin" and notif.user_id != user_id:
-            continue
+    for notif in notifications_to_update:
+        # Update each notification status
         notif.status = "read"
         updated.append(notif)
 
-    # Commit once for efficiency
+    # Commit all changes to database
     db.commit()
+
+    # Refresh each notification to get updated data
+    for notif in updated:
+        db.refresh(notif)
+
     return updated

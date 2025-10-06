@@ -25,14 +25,10 @@ const UserManagement = () => {
     // Fetch users from backend
     const fetchUsers = async () => {
         try {
-            const response = await API.get('/api/users/');
-
+            const response = await API.get('/api/users/getusers');
             const mappedUsers = response.data.map(user => {
                 let joinDate = user.join_date || user.created_at || null;
-                if (joinDate) {
-                    // Convert ISO string to human-readable format
-                    joinDate = new Date(joinDate).toLocaleDateString();
-                }
+                if (joinDate) joinDate = new Date(joinDate).toISOString();
 
                 return {
                     user_id: user.user_id,
@@ -41,24 +37,24 @@ const UserManagement = () => {
                     phone: user.phone,
                     role: user.role || 'driver',
                     status: user.status,
-                    profilePicture: user.profilePicture || null,
+                    profilePicture: user.profile_picture || null,
                     joinDate,
                 };
             });
-
             setUsers(mappedUsers);
             setFilteredUsers(mappedUsers);
         } catch (err) {
-            console.error('Failed to fetch users from backend:', err);
-            alert('Unable to fetch users from server. Please try again later.');
+            console.error('Failed to fetch users:', err);
+            alert('Unable to fetch users. Please try again later.');
         }
     };
 
     useEffect(() => { fetchUsers(); }, []);
 
-    // Filter users whenever filters or list change
+    // Apply filters and search
     useEffect(() => {
         let result = users;
+
         if (searchTerm) {
             result = result.filter(user =>
                 user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -66,15 +62,17 @@ const UserManagement = () => {
                 (user.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
+
         if (statusFilter !== 'all') result = result.filter(u => u.status === statusFilter);
         if (roleFilter !== 'all') result = result.filter(u => u.role === roleFilter);
+
         setFilteredUsers(result);
     }, [users, searchTerm, statusFilter, roleFilter]);
 
     // Add user
     const handleAddUser = async (userData) => {
         try {
-            const response = await API.post('/api/users', userData);
+            const response = await API.post('/api/users/add', userData);
             setUsers(prev => [...prev, response.data]);
             setShowAddModal(false);
         } catch (err) {
@@ -83,68 +81,54 @@ const UserManagement = () => {
         }
     };
 
-    // Status change (optimistic update)
-    const handleStatusChange = async (userId, newStatus) => {
-        try {
-            const user = users.find(u => u.user_id === userId);
-            if (!user) return;
-
-            await API.put(`/api/users/${user.user_id}`, { status: newStatus });
-
-            setUsers(prevUsers =>
-                prevUsers.map(u =>
-                    u.user_id === user.user_id ? { ...u, status: newStatus } : u
-                )
-            );
-        } catch (err) {
-            console.error(err);
-            alert('Failed to update status');
-        }
-    };
-
-    // Delete user (optimistic update)
-    const handleDeleteUser = async (userId) => {
-        if (!window.confirm("Are you sure you want to delete this user?")) return;
-
-        try {
-            await API.delete(`/api/users/${userId}`);
-            setUsers(prev => prev.filter(u => u.user_id !== userId)); // Remove from frontend immediately
-        } catch (err) {
-            console.error("Delete failed:", err);
-            alert(err.response?.data?.detail || 'Failed to delete user');
-        }
-    };
-
-    // Open edit modal
+    // Edit user
     const handleEditUser = (user) => {
         setSelectedUser(user);
         setShowEditModal(true);
     };
 
-    // Save edited user
     const handleSaveEditedUser = async (updatedUser) => {
         try {
-            await API.put(`/api/users/${updatedUser.user_id}`, {
+            await API.put(`/api/users/${updatedUser.user_id}/update`, {
                 name: updatedUser.name,
                 email: updatedUser.email,
                 phone: updatedUser.phone,
                 role: updatedUser.role,
                 status: updatedUser.status
             });
-
             setUsers(prevUsers =>
-                prevUsers.map(u =>
-                    u.user_id === updatedUser.user_id
-                        ? { ...u, ...updatedUser }
-                        : u
-                )
+                prevUsers.map(u => u.user_id === updatedUser.user_id ? { ...u, ...updatedUser } : u)
             );
-
             setShowEditModal(false);
             setSelectedUser(null);
         } catch (err) {
             console.error(err);
-            alert('Failed to update user');
+            alert(err.response?.data?.detail || 'Failed to update user');
+        }
+    };
+
+    // Status change
+    const handleStatusChange = async (userId, newStatus) => {
+        try {
+            await API.put(`/api/users/${userId}/toggle-status`);
+            setUsers(prevUsers =>
+                prevUsers.map(u => u.user_id === userId ? { ...u, status: newStatus } : u)
+            );
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.detail || 'Failed to update status');
+        }
+    };
+
+    // Delete user
+    const handleDeleteUser = async (userId) => {
+        if (!window.confirm("Are you sure you want to delete this user?")) return;
+        try {
+            await API.delete(`/api/users/${userId}/delete`);
+            setUsers(prev => prev.filter(u => u.user_id !== userId));
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.detail || 'Failed to delete user');
         }
     };
 

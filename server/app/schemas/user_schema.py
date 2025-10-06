@@ -6,11 +6,17 @@ from ..models.user_model import UserRole
 from ..schemas.vehicle_schema import VehicleOut
 
 
+# ------------------------------
+# ENUMS
+# ------------------------------
 class UserStatus(str, Enum):
     active = "active"
     inactive = "inactive"
 
 
+# ------------------------------
+# DRIVER SIGNUP
+# ------------------------------
 class DriverSignUp(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
@@ -25,7 +31,9 @@ class DriverSignUp(BaseModel):
         from_attributes = True
 
 
-# User creation (admin or self)
+# ------------------------------
+# ADMIN SIGNUP
+# ------------------------------
 class AdminSignUp(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
@@ -39,6 +47,9 @@ class AdminSignUp(BaseModel):
         from_attributes = True
 
 
+# ------------------------------
+# USER CREATE (GENERIC)
+# ------------------------------
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
@@ -52,7 +63,37 @@ class UserCreate(BaseModel):
         from_attributes = True
 
 
-# Admin update (role & status only)
+# ------------------------------
+# USER PROFILE OUTPUT
+# ------------------------------
+class UserProfileOut(BaseModel):
+    user_id: int
+    name: str
+    email: EmailStr
+    phone: Optional[str]
+    role: UserRole
+    status: str
+    profile_picture: Optional[str] = None
+    join_date: Optional[datetime] = None
+    vehicles: List[VehicleOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+# ------------------------------
+# USER CREATE RESPONSE
+# ------------------------------
+class UserCreateResponse(BaseModel):
+    status: int
+    success: bool
+    message: str
+    data: UserProfileOut
+
+
+# ------------------------------
+# ADMIN UPDATE
+# ------------------------------
 class UserAdminUpdate(BaseModel):
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
@@ -61,7 +102,9 @@ class UserAdminUpdate(BaseModel):
         from_attributes = True
 
 
-# Sign in
+# ------------------------------
+# SIGN IN
+# ------------------------------
 class SignInRequest(BaseModel):
     email: EmailStr
     password: str
@@ -71,7 +114,9 @@ class SignInRequest(BaseModel):
         from_attributes = True
 
 
-# User output (generic)
+# ------------------------------
+# USER OUTPUT
+# ------------------------------
 class UserOut(BaseModel):
     user_id: int
     name: str
@@ -84,7 +129,9 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
-# Token response
+# ------------------------------
+# TOKEN RESPONSES
+# ------------------------------
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -97,7 +144,9 @@ class TokenWithUser(TokenResponse):
     user: UserOut
 
 
-# Password reset flows
+# ------------------------------
+# PASSWORD RESET FLOWS
+# ------------------------------
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
@@ -113,28 +162,15 @@ class PasswordResetConfirm(BaseModel):
     new_password: str
 
 
-# User profile update (self)
+# ------------------------------
+# USER PROFILE UPDATE (SELF)
+# ------------------------------
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     phone: Optional[str] = Field(None, max_length=50)
     password: Optional[str] = Field(None, min_length=6, max_length=100)
     remove_picture: Optional[bool] = False
     profile_picture: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-
-class UserProfileOut(BaseModel):
-    user_id: int
-    name: str
-    email: EmailStr
-    phone: Optional[str]
-    role: UserRole
-    status: str
-    profile_picture: Optional[str] = None
-    join_date: Optional[datetime] = None
-    vehicles: List[VehicleOut] = []
 
     class Config:
         from_attributes = True

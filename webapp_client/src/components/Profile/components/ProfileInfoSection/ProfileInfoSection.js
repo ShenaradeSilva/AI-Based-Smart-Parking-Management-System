@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ProfileInfoSection.css";
-import { passwordRequirements, getDigitsForCountry, validateField } from "../../../../utils/validations";
+import { validateField } from "../../../../utils/validations";
 import PasswordRequirementsDisplay from "../../../Auth/common/PasswordRequirementsDisplay";
 import { countryCodes } from "../../../../utils/countryData";
 import { EyeIcon, EyeOffIcon } from "../../../Icons/Icons";
@@ -21,24 +21,33 @@ const ProfileInfoSection = ({
   const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
 
   useEffect(() => {
-    if (isEditing) validateAllFields();
+    if (isEditing) {
+      validateAllFields();
+    }
   }, [isEditing]);
 
-  // Notify parent about validation state
+  // Validate fields and notify parent
   useEffect(() => {
     if (onValidationChange) {
-      const isPasswordChanging = userData.newPassword && userData.newPassword !== "";
-      const allValid =
-        !errors.name &&
-        !errors.email &&
-        !errors.mobile &&
-        (!isPasswordChanging ||
-          (userData.currentPassword && !errors.currentPassword && !errors.newPassword && !errors.confirmPassword));
-      onValidationChange(!allValid); // true disables save, false enables save
-    }
-  }, [errors, userData.newPassword, userData.currentPassword]);
+      const hasErrors = Object.values(errors).some(error => error !== undefined && error !== '');
+      const isPasswordChanging = userData.newPassword && userData.newPassword.trim() !== "";
+      
+      // Check if required fields are filled
+      const requiredFieldsFilled = userData.name.trim() && userData.email.trim() && userData.mobile.trim();
+      
+      // Check password requirements if changing password
+      const passwordValid = !isPasswordChanging || (
+        userData.currentPassword && 
+        userData.newPassword && 
+        userData.confirmPassword &&
+        userData.newPassword === userData.confirmPassword
+      );
 
-  /** VALIDATE ALL FIELDS **/
+      const shouldDisableSave = hasErrors || !requiredFieldsFilled || !passwordValid;
+      onValidationChange(shouldDisableSave);
+    }
+  }, [errors, userData, onValidationChange]);
+
   const validateAllFields = () => {
     const newErrors = {
       name: validateField("name", userData.name || ""),
@@ -46,13 +55,14 @@ const ProfileInfoSection = ({
       mobile: validateField("mobile", userData.mobile || "")
     };
 
-    // If new password is entered, current password is required
+    // Password validation only when changing password
     if (userData.newPassword && userData.newPassword.trim() !== "") {
+      newErrors.newPassword = validateField("password", userData.newPassword);
+      
       if (!userData.currentPassword || userData.currentPassword.trim() === "") {
         newErrors.currentPassword = "Current password is required to change password";
       }
 
-      newErrors.newPassword = validateField("password", userData.newPassword);
       newErrors.confirmPassword = validateField(
         "confirmPassword",
         userData.confirmPassword || "",
@@ -63,27 +73,33 @@ const ProfileInfoSection = ({
     setErrors(newErrors);
   };
 
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
 
-    if (name === "name") processedValue = value.replace(/[^A-Za-z\s]/g, "");
-    if (name === "mobile") processedValue = value.replace(/\D/g, "").slice(0, 9);
+    // Input sanitization
+    if (name === "name") {
+      processedValue = value.replace(/[^A-Za-z\s]/g, "");
+    }
+    if (name === "mobile") {
+      processedValue = value.replace(/\D/g, "").slice(0, 9);
+    }
 
+    // Validate the field
     const validationError = validateField(name, processedValue, {
       password: name === "confirmPassword" ? userData.newPassword : undefined
     });
 
-    setErrors((prev) => {
+    setErrors(prev => {
       const updatedErrors = { ...prev, [name]: validationError };
 
-      // If typing new password, also check current password
-      if (name === "newPassword" && processedValue.trim() !== "" && (!userData.currentPassword || userData.currentPassword.trim() === "")) {
-        updatedErrors.currentPassword = "Current password is required to change password";
+      // Special handling for password fields
+      if (name === "newPassword" && processedValue.trim() !== "") {
+        if (!userData.currentPassword || userData.currentPassword.trim() === "") {
+          updatedErrors.currentPassword = "Current password is required to change password";
+        }
       }
 
-      // Remove error if current password is filled
       if (name === "currentPassword" && processedValue.trim() !== "") {
         delete updatedErrors.currentPassword;
       }
@@ -94,14 +110,9 @@ const ProfileInfoSection = ({
     onInputChange(name, processedValue);
   };
 
-
   const handleCountryCodeChange = (e) => {
     const newCode = e.target.value;
     onInputChange("countryCode", newCode);
-    setErrors((prev) => ({
-      ...prev,
-      mobile: validateField("mobile", userData.mobile || "", { countryCode: newCode })
-    }));
   };
 
   return (
@@ -161,7 +172,7 @@ const ProfileInfoSection = ({
                   >
                     {countryCodes.map((country) => (
                       <option key={country.code} value={country.code}>
-                        {country.code} ({country.name})
+                        {country.code}
                       </option>
                     ))}
                   </select>
@@ -170,8 +181,9 @@ const ProfileInfoSection = ({
                     name="mobile"
                     value={userData.mobile || ""}
                     onChange={handleInputChange}
-                    placeholder={`Enter 9-digit number`}
+                    placeholder="Enter 9-digit number"
                     className={`mobile-number-input ${errors.mobile ? "error" : ""}`}
+                    maxLength="9"
                   />
                 </div>
                 {errors.mobile && <span className="error-message">{errors.mobile}</span>}
@@ -179,13 +191,13 @@ const ProfileInfoSection = ({
             </div>
           ) : (
             <p className="info-value">
-              {userData.countryCode || "+94"} {userData.mobile || "Not set"}
+              {userData.countryCode} {userData.mobile || "Not set"}
             </p>
           )}
         </div>
 
-        {/* CURRENT PASSWORD */}
-        {isEditing && userData.newPassword && (
+        {/* CURRENT PASSWORD - Only show when changing password */}
+        {isEditing && userData.newPassword && userData.newPassword.trim() !== "" && (
           <div className="info-item">
             <label>Current Password</label>
             <div className="input-container">
@@ -213,7 +225,6 @@ const ProfileInfoSection = ({
           </div>
         )}
 
-
         {/* NEW PASSWORD */}
         {isEditing && (
           <div className="info-item">
@@ -227,7 +238,7 @@ const ProfileInfoSection = ({
                   onChange={handleInputChange}
                   onFocus={() => setIsNewPasswordFocused(true)}
                   onBlur={() => setIsNewPasswordFocused(false)}
-                  placeholder="Enter new password (leave empty for current)"
+                  placeholder="Enter new password (optional)"
                   className={errors.newPassword ? "error" : ""}
                 />
                 <button
@@ -239,10 +250,12 @@ const ProfileInfoSection = ({
                 </button>
               </div>
 
-              <PasswordRequirementsDisplay
-                password={userData.newPassword || ""}
-                isVisible={isNewPasswordFocused}
-              />
+              {isNewPasswordFocused && (
+                <PasswordRequirementsDisplay
+                  password={userData.newPassword || ""}
+                  isVisible={isNewPasswordFocused}
+                />
+              )}
 
               {errors.newPassword && (
                 <span className="error-message">{errors.newPassword}</span>
@@ -251,8 +264,8 @@ const ProfileInfoSection = ({
           </div>
         )}
 
-        {/* CONFIRM PASSWORD */}
-        {isEditing && userData.newPassword && userData.newPassword !== "" && (
+        {/* CONFIRM PASSWORD - Only show when new password is entered */}
+        {isEditing && userData.newPassword && userData.newPassword.trim() !== "" && (
           <div className="info-item">
             <label>Confirm New Password</label>
             <div className="input-container">
@@ -280,7 +293,7 @@ const ProfileInfoSection = ({
           </div>
         )}
 
-        {/* PASSWORD DISPLAY */}
+        {/* PASSWORD DISPLAY - Only in view mode */}
         {!isEditing && (
           <div className="info-item">
             <label>Password</label>

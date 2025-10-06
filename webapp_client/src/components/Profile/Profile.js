@@ -1,4 +1,3 @@
-/** @format */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
@@ -23,60 +22,79 @@ const Profile = () => {
     newPassword: '',
     countryCode: '+94',
   });
-  const [originalData, setOriginalData] = useState({ ...userData });
+  const [originalData, setOriginalData] = useState({});
   const [actualPassword, setActualPassword] = useState('');
   const [profileImage, setProfileImage] = useState(null);
   const [isSaveDisabled, setIsSaveDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
+  const [imageUpdateLoading, setImageUpdateLoading] = useState(false);
 
-  /** Load user profile (used both on mount and after save) **/
+  /** Load user profile from backend **/
   const loadUserProfile = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) return navigate('/signin');
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      if (!token) {
+        navigate('/signin');
+        return;
+      }
 
       const response = await API.get('/api/users/profile');
       const data = response.data;
+      const userProfile = data.data || data;
 
-      let mobile = data.phone || '';
-      if (mobile.startsWith(userData.countryCode)) {
-        mobile = mobile.slice(userData.countryCode.length);
-      }
+      let mobile = userProfile.phone || '';
+      const countryCode = '+94';
+      if (mobile.startsWith(countryCode)) mobile = mobile.slice(countryCode.length);
 
-      setUserData(prev => ({
-        ...prev,
-        name: data.name || '',
-        email: data.email || '',
+      const newUserData = {
+        name: userProfile.name || '',
+        email: userProfile.email || '',
         mobile,
+        countryCode,
         password: '',
         confirmPassword: '',
         newPassword: '',
-      }));
+        currentPassword: '',
+      };
 
-      setOriginalData(prev => ({
-        ...prev,
-        name: data.name || '',
-        email: data.email || '',
-        mobile,
-      }));
+      setUserData(newUserData);
+      setOriginalData(newUserData);
 
-      setProfileImage(data.profile_picture || null);
+      if (userProfile.profile_picture) {
+        // Add proper prefix for Base64
+        const lowerCase = userProfile.profile_picture.substring(0, 10).toLowerCase();
+        let prefix = 'data:image/jpeg;base64,';
+        if (lowerCase.includes('png')) prefix = 'data:image/png;base64,';
+        else if (lowerCase.includes('jpg')) prefix = 'data:image/jpeg;base64,';
+        else if (lowerCase.includes('jpeg')) prefix = 'data:image/jpeg;base64,';
+
+        setProfileImage(
+          userProfile.profile_picture.startsWith('data:')
+            ? userProfile.profile_picture
+            : `${prefix}${userProfile.profile_picture}`
+        );
+      } else {
+        setProfileImage(null);
+      }
+
       setActualPassword('********');
+      setPasswordUpdated(false);
     } catch (error) {
       console.error('Profile load error:', error);
       if (error.response?.status === 401) {
-        localStorage.removeItem('token');
         localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         navigate('/signin');
       } else {
-        alert('Failed to load profile.');
+        alert('Failed to load profile: ' + (error.response?.data?.detail || 'Network error'));
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate, userData.countryCode]);
+  }, [navigate]);
 
   useEffect(() => {
     loadUserProfile();
@@ -89,64 +107,164 @@ const Profile = () => {
   const handleEditClick = () => {
     setOriginalData({ ...userData });
     setIsEditing(true);
+    setPasswordUpdated(false);
   };
 
   const handleCancelClick = () => {
     setUserData({ ...originalData });
     setIsEditing(false);
     setIsSaveDisabled(true);
+    setPasswordUpdated(false);
   };
 
-  /** Save updated profile **/
+  /** Convert file to Base64 **/
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result); // full data:image/... string
+      reader.onerror = reject;
+    });
+  };
+
+  /** Compress image to max 150x150 (optional) **/
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const maxSize = 150;
+        let { width, height } = img;
+
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height >= width && height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob failed'));
+          },
+          'image/jpeg',
+          0.6
+        );
+
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Image load failed'));
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  /** Handle profile image update **/
+  const handleImageChange = async (file) => {
+    try {
+      setImageUpdateLoading(true);
+
+      // Compress if large
+      let processedFile = file;
+      if (file.size >= 50000) {
+        const blob = await compressImage(file);
+        processedFile = new File([blob], file.name, { type: file.type });
+      }
+
+      // Convert to Base64
+      let base64Data = await fileToBase64(processedFile); // full data:image/... string
+      setProfileImage(base64Data);
+
+      // Remove prefix before sending to backend (just the base64 text)
+      const base64Text = base64Data.split(',')[1];
+
+      const response = await API.put('/api/users/profile/update-picture-base64', {
+        profile_picture: base64Text,
+      });
+
+      if (response.data.success) {
+        alert('Profile picture updated successfully!');
+        await loadUserProfile();
+      } else {
+        throw new Error(response.data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Profile pic upload error:', error);
+      alert('Failed to upload profile picture. Try a smaller image.');
+      await loadUserProfile();
+    } finally {
+      setImageUpdateLoading(false);
+    }
+  };
+
+  /** Remove profile picture **/
+  const handleRemovePhoto = async () => {
+    try {
+      setImageUpdateLoading(true);
+      const response = await API.put('/api/users/profile/update-picture-base64', {
+        profile_picture: '',
+      });
+      if (response.data.success) {
+        setProfileImage(null);
+        alert('Profile picture removed successfully!');
+        await loadUserProfile();
+      } else {
+        throw new Error('Failed to remove picture');
+      }
+    } catch (error) {
+      console.error('Remove photo error:', error);
+      alert('Failed to remove profile picture.');
+    } finally {
+      setImageUpdateLoading(false);
+    }
+  };
+
+  /** Save profile updates **/
   const handleSave = async () => {
-    // Validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.com$/; // must contain @ and end with .com
-    if (!userData.name.trim()) {
-      return alert('Name cannot be empty.');
-    }
-    if (!emailPattern.test(userData.email)) {
-      return alert('Please enter a valid email (must contain "@" and end with ".com").');
-    }
-    if (!/^\d{9}$/.test(userData.mobile)) {
-      return alert('Mobile number must be exactly 9 digits.');
-    }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!userData.name.trim()) return alert('Name cannot be empty.');
+    if (!emailPattern.test(userData.email)) return alert('Enter a valid email.');
+    if (!/^\d{9}$/.test(userData.mobile)) return alert('Mobile must be 9 digits.');
+    if (userData.newPassword && userData.newPassword !== userData.confirmPassword)
+      return alert('Password mismatch.');
 
     try {
       setSaveLoading(true);
+      const payload = {
+        name: userData.name.trim(),
+        email: userData.email.trim(),
+        phone: `${userData.countryCode}${userData.mobile}`,
+        ...(userData.newPassword ? { password: userData.newPassword } : {}),
+      };
 
-      const payload = new FormData();
-      payload.append('name', userData.name);
-      payload.append('email', userData.email);
+      const response = await API.put('/api/users/profile/update', payload);
 
-      let normalizedMobile = userData.mobile.replace(/^\+\d+/, '');
-      payload.append('phone', `${userData.countryCode}${normalizedMobile}`);
-
-      if (userData.newPassword) {
-        payload.append('password', userData.newPassword);
+      if (response.data.success) {
+        await loadUserProfile();
+        setIsEditing(false);
+        setIsSaveDisabled(true);
+        if (userData.newPassword) setPasswordUpdated(true);
+        alert('Profile updated successfully!');
+      } else {
+        throw new Error(response.data.message || 'Update failed');
       }
-
-      if (profileImage && typeof profileImage !== 'string') {
-        payload.append('profile_picture', profileImage);
-      }
-
-      await API.put('/api/users/profile', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      // Reload profile from backend
-      await loadUserProfile();
-      setIsEditing(false);
-      setIsSaveDisabled(true);
-      alert('Profile updated successfully!');
     } catch (error) {
       console.error('Profile save error:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('authToken');
-        navigate('/signin');
-      } else {
-        alert('Failed to update profile.');
-      }
+      alert(error.response?.data?.detail || error.message || 'Failed to update profile.');
     } finally {
       setSaveLoading(false);
     }
@@ -173,8 +291,9 @@ const Profile = () => {
             <ProfileImageSection
               profileImage={profileImage}
               isEditing={isEditing}
-              onImageChange={setProfileImage}
-              onRemovePhoto={() => setProfileImage(null)}
+              onImageChange={handleImageChange}
+              onRemovePhoto={handleRemovePhoto}
+              loading={imageUpdateLoading}
             />
 
             <div className="profile-info-container">
@@ -186,8 +305,8 @@ const Profile = () => {
                 onInputChange={handleInputChange}
                 actualPassword={actualPassword}
                 maskPassword={maskPassword}
-                passwordUpdated={!!userData.newPassword}
-                onValidationChange={setIsSaveDisabled} // can remove if you want
+                passwordUpdated={passwordUpdated}
+                onValidationChange={setIsSaveDisabled}
               />
             </div>
           </div>

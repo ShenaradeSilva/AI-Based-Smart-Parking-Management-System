@@ -3,7 +3,38 @@ import { CloseIcon } from '../../../Icons/Icons';
 import './NotificationItem.css';
 
 const NotificationItem = ({ notification, onMarkAsRead, onPerformAction }) => {
-  const isRead = notification.read; // use mapped field
+  const isRead = notification.read;
+
+  const handleMarkAsRead = () => {
+    console.log('NotificationItem - handleMarkAsRead called');
+    console.log('Notification object:', notification);
+    console.log('Notification ID:', notification.id);
+    console.log('onMarkAsRead function:', onMarkAsRead);
+    
+    if (onMarkAsRead && notification.id) {
+      onMarkAsRead(notification.id);
+    } else {
+      console.error('Cannot mark as read - missing ID or handler:', {
+        id: notification.id,
+        hasHandler: !!onMarkAsRead
+      });
+    }
+  };
+
+  const handlePerformAction = () => {
+    console.log('NotificationItem - handlePerformAction called');
+    console.log('Notification object:', notification);
+    
+    if (onPerformAction && notification.id) {
+      onPerformAction(notification);
+    } else {
+      console.error('Cannot perform action - missing ID or handler:', {
+        id: notification.id,
+        hasHandler: !!onPerformAction
+      });
+    }
+  };
+
   return (
     <div 
       className={`notification-item ${notification.type} ${isRead ? 'read' : 'unread'}`}
@@ -21,7 +52,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onPerformAction }) => {
         <div className="notification-footer">
           <button 
             className="notification-action"
-            onClick={() => onPerformAction(notification)}
+            onClick={handlePerformAction}
           >
             {notification.action}
           </button>
@@ -31,7 +62,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onPerformAction }) => {
       {!isRead && (
         <div 
           className="mark-read"
-          onClick={() => onMarkAsRead(notification.id)}
+          onClick={handleMarkAsRead}
           title="Mark as read"
         >
           <CloseIcon />
@@ -40,6 +71,5 @@ const NotificationItem = ({ notification, onMarkAsRead, onPerformAction }) => {
     </div>
   );
 };
-
 
 export default NotificationItem;
