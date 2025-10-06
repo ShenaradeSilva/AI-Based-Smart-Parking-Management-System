@@ -9,18 +9,33 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
     totalLots: 1,
     ratePerHour: 0,
   });
-
   const [lotSlots, setLotSlots] = useState([{ lotName: '', slots: 0 }]);
+  const [suggestions, setSuggestions] = useState([]);
 
   // Update lotSlots when totalLots changes
   useEffect(() => {
-    const totalLots = Number(newLocation.totalLots) || 1;
-    const newLotSlots = [];
-    for (let i = 0; i < totalLots; i++) {
-      newLotSlots.push(lotSlots[i] || { lotName: '', slots: 0 });
+    const total = Number(newLocation.totalLots) || 1;
+    const updated = [];
+    for (let i = 0; i < total; i++) {
+      updated.push(lotSlots[i] || { lotName: '', slots: 0 });
     }
-    setLotSlots(newLotSlots);
+    setLotSlots(updated);
   }, [newLocation.totalLots]);
+
+  // Autocomplete suggestions for address
+  useEffect(() => {
+    if (!newLocation.name.trim()) return setSuggestions([]);
+    const fetchSuggestions = async () => {
+      try {
+        const res = await API.get(`/api/locations/search?query=${encodeURIComponent(newLocation.name)}`);
+        setSuggestions(res.data.map(loc => loc.address || loc.name));
+      } catch (err) {
+        console.error('Autocomplete error:', err);
+      }
+    };
+    const delay = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(delay);
+  }, [newLocation.name]);
 
   const handleLotChange = (index, field, value) => {
     const updated = [...lotSlots];
@@ -34,20 +49,14 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
       alert('Please fill all fields and ensure lots and rate are greater than 0.');
       return;
     }
-
     for (let i = 0; i < lotSlots.length; i++) {
-      if (!lotSlots[i].lotName?.trim()) {
-        alert(`Please enter a name for Lot ${i + 1}`);
-        return;
-      }
-      if (lotSlots[i].slots <= 0) {
-        alert(`Please enter slots for ${lotSlots[i].lotName} (must be > 0)`);
+      if (!lotSlots[i].lotName?.trim() || lotSlots[i].slots <= 0) {
+        alert(`Please enter valid details for Lot ${i + 1}`);
         return;
       }
     }
-
     if (!currentAdmin?.id) {
-      alert('Admin information missing. Please re-login.');
+      alert('Admin info missing. Please re-login.');
       return;
     }
 
@@ -60,17 +69,9 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
     };
 
     try {
-      const res = await API.post(`/parking/locations?admin_id=${currentAdmin.id}`, payload);
-
+      const res = await API.post(`/api/locations/create`, payload);
       if (res.data?.id) {
-        onAddLocation({
-          id: res.data.id,
-          name: payload.name,
-          address: payload.address,
-          totalLots: payload.total_lots,
-          ratePerHour: payload.rate_per_hour,
-          lots: payload.lots
-        });
+        onAddLocation(res.data);
       }
     } catch (err) {
       console.error('Error adding location:', err);
@@ -79,6 +80,7 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
 
     setNewLocation({ name: '', address: '', totalLots: 1, ratePerHour: 0 });
     setLotSlots([{ lotName: '', slots: 0 }]);
+    setSuggestions([]);
     onClose();
   };
 
@@ -90,15 +92,26 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         <div className="modal-content">
-          <div className="form-group">
+          <div className="form-group" style={{ position: 'relative' }}>
             <label>Location Name</label>
             <input
               type="text"
               value={newLocation.name}
               onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
               placeholder="Enter location name"
+              autoComplete="off"
             />
+            {suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((s, idx) => (
+                  <li key={idx} onClick={() => setNewLocation({ ...newLocation, address: s, name: newLocation.name })}>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+
           <div className="form-group">
             <label>Address</label>
             <input
@@ -108,6 +121,7 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
               placeholder="Enter address"
             />
           </div>
+
           <div className="form-group">
             <label>Number of Parking Lots</label>
             <input
@@ -117,6 +131,7 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
               onChange={(e) => setNewLocation({ ...newLocation, totalLots: Number(e.target.value) || 1 })}
             />
           </div>
+
           <div className="form-group">
             <label>Rate per Hour (LKR)</label>
             <input
@@ -127,7 +142,6 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
             />
           </div>
 
-          {/* Lot slot inputs */}
           <div className="lot-slots-section">
             <h4>Slots per Lot</h4>
             {lotSlots.map((lot, index) => (
@@ -136,14 +150,14 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
                   type="text"
                   value={lot.lotName}
                   onChange={(e) => handleLotChange(index, 'lotName', e.target.value)}
-                  placeholder={`Enter name for Lot ${index + 1}`}
+                  placeholder={`Lot ${index + 1} Name`}
                 />
                 <input
                   type="number"
                   min="1"
                   value={lot.slots}
                   onChange={(e) => handleLotChange(index, 'slots', e.target.value)}
-                  placeholder="Enter number of slots"
+                  placeholder="Number of Slots"
                 />
               </div>
             ))}

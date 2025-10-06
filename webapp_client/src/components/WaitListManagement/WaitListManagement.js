@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from '../../api/axios'; // Axios instance configured with baseURL
+import API from '../../api/axios'; // Reuse your configured Axios instance
 import './WaitListManagement.css';
 import WaitListStats from './components/WaitListStats/WaitListStats';
 import WaitListTable from './components/WaitListTable/WaitListTable';
 import HeaderPages from '../Common/HeaderPages';
-import { waitlistData as mockStats, waitlistQueue as mockQueue } from '../../data/waitList';
 
 const WaitListManagement = () => {
   const navigate = useNavigate();
@@ -15,11 +14,22 @@ const WaitListManagement = () => {
   // Fetch waitlist queue from backend
   const fetchWaitlist = async () => {
     try {
-      const response = await axios.get('/waitlist'); // GET /waitlist returns all requests
-      setWaitlistQueue(response.data || mockQueue);
+      const response = await API.get('/api/waitlist/get');
+      const mappedQueue = response.data.map(item => ({
+        id: item.waitlist_id,
+        driverName: item.user_name,
+        vehicleNumber: item.vehicle_number,
+        parkingSlot: item.parking_slot_number,
+        bookingDate: item.requested_at?.split('T')[0] || null,
+        requestedTime: item.requested_at?.split('T')[1]?.slice(0, 5) || null,
+        status: item.status,
+        priority: item.priority,
+        notified_at: item.notified_at,
+        createdAt: item.requested_at,
+      }));
+      setWaitlistQueue(mappedQueue);
     } catch (error) {
-      console.error('Failed to fetch waitlist, using mock data.', error);
-      setWaitlistQueue(mockQueue);
+      console.error('Failed to fetch waitlist:', error);
     } finally {
       setLoading(false);
     }
@@ -33,10 +43,15 @@ const WaitListManagement = () => {
 
   const handleNotify = async (id) => {
     try {
-      await axios.post(`/waitlist/${id}/notify`); // backend endpoint
+      const response = await API.post(`/api/waitlist/notify/${id}`);  
+      const updatedEntry = {
+        id: response.data.waitlist_id,
+        status: response.data.status,
+        notified_at: response.data.notified_at,
+      };
       setWaitlistQueue(prev =>
         prev.map(item =>
-          item.id === id ? { ...item, status: 'notified', notified_at: new Date().toISOString() } : item
+          item.id === id ? { ...item, ...updatedEntry } : item
         )
       );
     } catch (error) {
@@ -46,21 +61,16 @@ const WaitListManagement = () => {
 
   const handleRemove = async (id) => {
     try {
-      // Call backend to delete the waitlist request
-      await axios.delete(`/waitlist/${id}`);
-
-      // Update the UI after successful deletion
+      await API.delete(`/api/waitlist/${id}/remove`); 
       setWaitlistQueue(prev => prev.filter(item => item.id !== id));
     } catch (error) {
       console.error('Failed to remove waitlist request:', error);
-      // Optionally fallback to remove from UI
       setWaitlistQueue(prev => prev.filter(item => item.id !== id));
     }
   };
 
-  // Calculate dynamic stats
+  // Dynamic stats
   const today = new Date().toISOString().slice(0, 10);
-
   const activeWaitlist = waitlistQueue.filter(
     item => item.status === 'pending' || item.status === 'notified'
   ).length;
@@ -81,13 +91,11 @@ const WaitListManagement = () => {
   return (
     <div className="waitlist-management">
       <HeaderPages title="Wait List Requests" onBack={handleBackToDashboard} />
-
       <WaitListStats waitlistQueue={waitlistQueue} />
-
       <WaitListTable
         waitlistQueue={waitlistQueue}
         onNotify={handleNotify}
-        onRemove={handleRemove} 
+        onRemove={handleRemove}
       />
     </div>
   );

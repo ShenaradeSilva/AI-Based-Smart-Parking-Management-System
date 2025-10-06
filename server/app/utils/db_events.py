@@ -10,12 +10,16 @@ def setup_database_events():
     """
 
     # Import models here, inside the function, to avoid circular imports
-    from ..models.user_model import User
+    from ..models.user_model import User, UserRole, UserStatus
     from ..models.usersession_model import UserSession
     from ..models.vehicle_model import Vehicle
-    from ..models.notification_model import Notification
+    from ..models.notification_model import Notification, NotificationStatus, NotificationType
     from ..models.location_model import Location
+    from ..models.parkinglot_model import ParkingLot
+    from ..models.parkingslot_model import ParkingSlot
     from ..models.reservation_model import Reservation, ReservationStatus
+    from ..models.waitlist_model import Waitlist, WaitlistPriority, WaitlistStatus
+    from ..models.cancellation_model import CancellationRequest, CancellationStatus
 
     tracked_models = [User, UserSession, Vehicle]
 

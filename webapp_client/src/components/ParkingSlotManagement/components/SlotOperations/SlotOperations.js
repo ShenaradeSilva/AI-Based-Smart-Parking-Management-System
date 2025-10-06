@@ -12,9 +12,12 @@ const SlotOperations = ({
   setSlots, // to update slot status after marking maintenance
 }) => {
 
+  // Export all slot data as CSV
   const handleExportData = async () => {
     try {
       const response = await API.get('/parking/slots/export', { responseType: 'blob' });
+
+      // Trigger download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -22,58 +25,70 @@ const SlotOperations = ({
       document.body.appendChild(link);
       link.click();
       link.remove();
+
+      alert('Slot data exported successfully.');
     } catch (err) {
-      console.error('Failed to export slots, using mock data as fallback', err);
-      alert('Export failed. Using mock data fallback.');
+      console.error('Error exporting slots:', err);
+      alert('Failed to export slot data.');
     }
   };
 
+  // Mark slot as maintenance
   const handleMarkMaintenance = async () => {
-    if (!selectedSlotForMaintenance) return;
+    if (!selectedSlotForMaintenance) return alert('Please select a slot.');
 
     try {
       const response = await API.put(`/parking/slots/${selectedSlotForMaintenance}/maintenance`);
-      // Update slot status locally
-      const updatedSlots = slots.map(slot =>
-        slot.id === selectedSlotForMaintenance ? { ...slot, status: 'maintenance' } : slot
-      );
-      setSlots(updatedSlots);
-      alert('Slot marked as maintenance successfully');
+      if (response.status === 200) {
+        // Update slot status in local state
+        const updatedSlots = slots.map(slot =>
+          slot.id === selectedSlotForMaintenance
+            ? { ...slot, status: 'maintenance' }
+            : slot
+        );
+        setSlots(updatedSlots);
+        alert('Slot marked as maintenance successfully.');
+      } else {
+        alert('Failed to mark slot for maintenance.');
+      }
     } catch (err) {
-      console.error('Failed to mark slot for maintenance, using mock data', err);
-      const updatedSlots = slots.map(slot =>
-        slot.id === selectedSlotForMaintenance ? { ...slot, status: 'maintenance' } : slot
-      );
-      setSlots(updatedSlots);
-      alert('Slot marked as maintenance (mock fallback)');
+      console.error('Error marking slot for maintenance:', err);
+      alert('Error: Could not update slot status.');
     }
   };
 
+  // Optimize slot allocation
   const handleOptimizeAllocation = async () => {
     try {
-      await API.put('/parking/slots/optimize');
-      alert('Slot allocation optimized successfully');
+      const response = await API.put('/parking/slots/optimize');
+      if (response.status === 200) {
+        alert('Slot allocation optimized successfully.');
+      } else {
+        alert('Optimization process failed.');
+      }
     } catch (err) {
-      console.error('Failed to optimize slot allocation, using mock fallback', err);
-      alert('Slot allocation optimized (mock fallback)');
+      console.error('Error optimizing slot allocation:', err);
+      alert('Error: Optimization failed.');
     }
   };
 
+  // Render operation-specific content
   const renderOperationContent = () => {
     switch (selectedOperation) {
       case 'export':
         return (
           <div className="operation-content">
-            <p>Export all slot data to a CSV file for reporting and analysis.</p>
+            <p>Export all parking slot data to a CSV file for reporting or analysis.</p>
             <button className="operation-button primary" onClick={handleExportData}>
-              <span><ExportIcon /></span> Export Data
+              <ExportIcon /> Export Data
             </button>
           </div>
         );
+
       case 'maintenance':
         return (
           <div className="operation-content">
-            <p>Select a slot to mark for maintenance. Maintenance slots will be unavailable for booking.</p>
+            <p>Select a slot to mark as under maintenance. These slots will not be available for booking.</p>
             <div className="maintenance-selector">
               <select
                 value={selectedSlotForMaintenance}
@@ -82,7 +97,7 @@ const SlotOperations = ({
                 <option value="">Select a slot</option>
                 {slots.map(slot => (
                   <option key={slot.id} value={slot.id}>
-                    {slot.id} - {slot.location || 'Unknown'} ({slot.status})
+                    Slot {slot.id} — {slot.location || 'Unknown'} ({slot.status})
                   </option>
                 ))}
               </select>
@@ -91,24 +106,26 @@ const SlotOperations = ({
                 onClick={handleMarkMaintenance}
                 disabled={!selectedSlotForMaintenance}
               >
-                <span><MarkIcon /></span> Mark for Maintenance
+                <MarkIcon /> Mark for Maintenance
               </button>
             </div>
           </div>
         );
+
       case 'optimize':
         return (
           <div className="operation-content">
-            <p>Optimize slot allocation to improve parking efficiency and space utilization.</p>
+            <p>Optimize parking slot allocation for better efficiency and space usage.</p>
             <button className="operation-button primary" onClick={handleOptimizeAllocation}>
-              <span><OptimiseIcon /></span> Optimize Allocation
+              <OptimiseIcon /> Optimize Allocation
             </button>
           </div>
         );
+
       default:
         return (
           <div className="operation-content">
-            <p>Select an operation to manage your parking slots.</p>
+            <p>Select an operation to manage parking slots.</p>
           </div>
         );
     }
@@ -123,19 +140,21 @@ const SlotOperations = ({
           className={selectedOperation === 'export' ? 'active' : ''}
           onClick={() => onOperationChange('export')}
         >
-          <span><ExportIcon /></span> Export Slot Data
+          <ExportIcon /> Export Slot Data
         </button>
+
         <button
           className={selectedOperation === 'maintenance' ? 'active' : ''}
           onClick={() => onOperationChange('maintenance')}
         >
-          <span><MarkIcon /></span> Mark Slot for Maintenance
+          <MarkIcon /> Mark Slot for Maintenance
         </button>
+
         <button
           className={selectedOperation === 'optimize' ? 'active' : ''}
           onClick={() => onOperationChange('optimize')}
         >
-          <span><OptimiseIcon /></span> Optimize Slot Allocation
+          <OptimiseIcon /> Optimize Slot Allocation
         </button>
       </div>
 

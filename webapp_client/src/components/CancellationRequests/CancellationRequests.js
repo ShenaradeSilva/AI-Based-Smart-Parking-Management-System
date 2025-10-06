@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../../api/axios'; // axios instance
+import API from '../../api/axios';
 import './CancellationRequests.css';
 import RequestsTable from './components/RequestsTable/RequestsTable';
 import StatsSection from './components/StatsSection/StatsSection';
 import NoRequests from './components/NoRequests/NoRequests';
 import HeaderPages from '../Common/HeaderPages';
-import cancellationRequestsData from '../../data/cancellationRequestsData'; // mock data
 
 const CancellationRequests = () => {
   const navigate = useNavigate();
@@ -14,28 +13,21 @@ const CancellationRequests = () => {
   const [stats, setStats] = useState({ todayRequests: 0, approvalRate: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Fetch pending requests from backend or fallback to mock data
   const fetchPendingRequests = async () => {
     try {
-      const res = await API.get('/cancellations/pending');
+      const res = await API.get('/api/cancellations/list-pending');
       setPendingRequests(res.data);
     } catch (error) {
-      console.warn('Backend fetch failed, using mock data', error);
-      setPendingRequests(cancellationRequestsData);
+      console.error('Failed to fetch pending requests', error);
     }
   };
 
-  // Fetch stats from backend or fallback to mock stats
   const fetchStats = async () => {
     try {
-      const res = await API.get('/cancellations/stats');
+      const res = await API.get('/api/cancellations/stats');
       setStats(res.data);
     } catch (error) {
-      console.warn('Backend fetch failed, using mock stats', error);
-      setStats({
-        todayRequests: cancellationRequestsData.length,
-        approvalRate: 89,
-      });
+      console.error('Failed to fetch stats', error);
     }
   };
 
@@ -50,34 +42,27 @@ const CancellationRequests = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      await API.post(`/cancellations/${requestId}/approve`);
+      await API.post(`/api/cancellations/${requestId}/approve`);
       setPendingRequests(prev => prev.filter(r => r.id !== requestId));
       setStats(prev => ({ ...prev, todayRequests: prev.todayRequests - 1 }));
     } catch (error) {
-      console.warn('Backend approve failed, updating mock data', error);
-      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-      setStats(prev => ({ ...prev, todayRequests: prev.todayRequests - 1 }));
+      console.error('Failed to approve request', error);
     }
   };
 
   const handleReject = async (requestId) => {
     try {
-      await API.post(`/cancellations/${requestId}/reject`);
+      await API.post(`/api/cancellations/${requestId}/reject`);
       setPendingRequests(prev => prev.filter(r => r.id !== requestId));
       setStats(prev => ({ ...prev, todayRequests: prev.todayRequests - 1 }));
     } catch (error) {
-      console.warn('Backend reject failed, updating mock data', error);
-      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-      setStats(prev => ({ ...prev, todayRequests: prev.todayRequests - 1 }));
+      console.error('Failed to reject request', error);
     }
   };
 
-  const handleBackToDashboard = () => navigate('/dashboard');
-
   return (
     <div className="cancellation-requests">
-      <HeaderPages title="Cancellation Requests" onBack={handleBackToDashboard} />
-
+      <HeaderPages title="Cancellation Requests" onBack={() => navigate('/dashboard')} />
       <div className="requests-content">
         <div className="pending-requests-section">
           <h2>Pending Cancellation Requests</h2>
@@ -93,7 +78,6 @@ const CancellationRequests = () => {
             <NoRequests />
           )}
         </div>
-
         <StatsSection stats={stats} />
       </div>
     </div>

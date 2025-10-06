@@ -17,25 +17,19 @@ const RequestsTable = ({ requests, onApprove, onReject }) => {
         </tr>
       </thead>
       <tbody>
-        {requests.map(request => (
-          <tr key={request.id}>
-            <td>{request.id}</td>
-            <td>{request.driverName}</td>
-            <td>{request.vehicleNumber}</td>
-            <td>{request.slot}</td>
-            <td>{request.reason}</td>
-            <td>{request.requestedTime}</td>
+        {requests.map(r => (
+          <tr key={r.id}>
+            <td>{r.id}</td>
+            <td>{r.driver_name}</td>
+            <td>{r.vehicle_number}</td>
+            <td>{r.slot}</td>
+            <td>{r.reason}</td>
+            <td>{new Date(r.requested_at).toLocaleString()}</td>
             <td className="actions-cell">
-              <button 
-                className="approve-btn"
-                onClick={() => onApprove(request.id)}
-              >
+              <button className="approve-btn" onClick={() => onApprove(r.id)}>
                 <ApproveIcon /> Approve
               </button>
-              <button 
-                className="reject-btn"
-                onClick={() => onReject(request.id)}
-              >
+              <button className="reject-btn" onClick={() => onReject(r.id)}>
                 <RejectIcon /> Reject
               </button>
             </td>

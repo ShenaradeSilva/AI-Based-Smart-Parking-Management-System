@@ -3,30 +3,10 @@ from typing import Optional
 from datetime import datetime
 
 
-# Locations
-class LocationBase(BaseModel):
-    name: str
-    address: str
-    hourly_rate: Optional[float] = 150.0
-
-
-class LocationCreate(LocationBase):
-    total_slots: Optional[int] = 0  # Total slots at this location
-
-
-class Location(LocationBase):
-    location_id: int
-    created_at: datetime
-    created_by: Optional[int]  # Admin ID who added the location
-
-    class Config:
-        orm_mode = True
-
-
 # Parking Slots
 class ParkingSlotBase(BaseModel):
     slot_number: str
-    slot_type: Optional[str] = "standard"
+    slot_type: Optional[str] = "vehicle"
     status: Optional[str] = "available"
 
 

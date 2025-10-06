@@ -9,7 +9,7 @@ from ..schemas.waitlist_schema import WaitlistCreate, WaitlistOut
 router = APIRouter(prefix="/api/waitlist", tags=["Waitlist"])
 
 
-@router.get("/", response_model=List[WaitlistOut])
+@router.get("/get", response_model=List[WaitlistOut])
 def get_waitlist_queue(db: Session = Depends(get_db)):
     waitlist = waitlist_services.get_waitlist(db)
     result = []
@@ -30,7 +30,7 @@ def get_waitlist_queue(db: Session = Depends(get_db)):
     return result
 
 
-@router.post("/", response_model=WaitlistOut)
+@router.post("/create", response_model=WaitlistOut)
 def create_waitlist(waitlist: WaitlistCreate, db: Session = Depends(get_db)):
     entry = waitlist_services.create_waitlist(db, waitlist)
     if entry:
@@ -61,7 +61,7 @@ def notify_driver(waitlist_id: int, db: Session = Depends(get_db)):
     return entry
 
 
-@router.delete("/{waitlist_id}", response_model=WaitlistOut)
+@router.delete("/{waitlist_id}/remove", response_model=WaitlistOut)
 def remove_waitlist(waitlist_id: int, db: Session = Depends(get_db)):
     entry = waitlist_services.remove_waitlist(db, waitlist_id)
     if not entry:

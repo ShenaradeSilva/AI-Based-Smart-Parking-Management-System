@@ -18,7 +18,7 @@ def get_cancellation_stats_route(db: Session = Depends(get_db)):
     return get_cancellation_stats(db)
 
 
-@router.get("/", response_model=list[CancellationRequestOut])
+@router.get("/list-pending", response_model=list[CancellationRequestOut])
 def list_pending_cancellations(db: Session = Depends(get_db)):
     requests = get_pending_requests(db)
 

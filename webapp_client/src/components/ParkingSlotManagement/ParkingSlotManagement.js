@@ -8,13 +8,11 @@ import SlotOperations from './components/SlotOperations/SlotOperations';
 import AddLocationModal from './components/Modals/AddLocationModal';
 import AddSlotModal from './components/Modals/AddSlotModal';
 import HeaderPages from '../Common/HeaderPages';
-import locationsData from '../../data/locations';
-import slotsData from '../../data/slots';
 
 const ParkingSlotManagement = () => {
   const navigate = useNavigate();
 
-  const [locations, setLocations] = useState(locationsData);
+  const [locations, setLocations] = useState([]);
   const [slots, setSlots] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
   const [selectedOperation, setSelectedOperation] = useState(null);
@@ -26,43 +24,40 @@ const ParkingSlotManagement = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('');
 
-  // Get logged-in admin from localStorage (replace with context if you have auth context)
+  // Get logged-in admin from localStorage
   const loggedInAdmin = {
-    id: localStorage.getItem('admin_id') || 1, // fallback to 1 if not found
+    id: localStorage.getItem('admin_id') || 1,
     name: localStorage.getItem('admin_name') || 'Admin',
+    token: localStorage.getItem('admin_token') || '', // if using JWT
   };
 
+  // Normalize slot data to match frontend
   const normalizeSlots = (rawSlots, allLocations) =>
     rawSlots.map(slot => {
       const loc = allLocations.find(l => l.location_id === slot.parking_lot_id);
       return {
         ...slot,
-        id: slot.id || slot.slot_id, // Ensure we store backend ID
+        id: slot.id || slot.slot_id,
         location: loc ? loc.name : 'Unknown',
         status: slot.status || 'Available',
         lastUpdated: slot.updated_at || slot.lastUpdated || new Date().toISOString(),
       };
     });
 
+  // Fetch all locations and slots from backend
   const fetchData = async () => {
     try {
       const [locationsRes, slotsRes] = await Promise.all([
-        API.get('/api/parking/locations'),
-        API.get('/api/parking/slots'),
+        API.get('/api/locations/list'),
+        API.get('/api/parking/slots/list'),
       ]);
 
-      const mergedLocations = [
-        ...locationsData,
-        ...locationsRes.data.filter(loc => !locationsData.find(l => l.location_id === loc.location_id)),
-      ];
-
-      const mergedSlots = normalizeSlots([...slotsData, ...slotsRes.data], mergedLocations);
-
-      setLocations(mergedLocations);
-      setSlots(mergedSlots);
+      setLocations(locationsRes.data);
+      setSlots(normalizeSlots(slotsRes.data, locationsRes.data));
     } catch (err) {
-      console.error('Error fetching data from backend', err);
-      setSlots(normalizeSlots(slotsData, locationsData));
+      console.error('Error fetching backend data:', err);
+      setLocations([]);
+      setSlots([]);
     }
   };
 
@@ -70,39 +65,35 @@ const ParkingSlotManagement = () => {
     fetchData();
   }, []);
 
+  // Add or edit a slot
   const handleAddSlot = async (newSlotData) => {
     if (editingSlot) {
-      // UI update first
+      // Optimistic UI update
       setSlots(slots.map(slot => slot.id === editingSlot.id ? { ...slot, ...newSlotData } : slot));
 
       try {
-        await API.put(`/api/parking/slots/${editingSlot.id}`, {
-          ...newSlotData,
-          admin_id: loggedInAdmin.id,
-          status: newSlotData.status.toLowerCase(),
+        await API.put(`/api/parking/slots/${editingSlot.id}/status-update`, null, {
+          params: { status: newSlotData.status.toLowerCase() },
         });
       } catch (err) {
         console.error('Error updating slot on backend', err);
       }
-
       setEditingSlot(null);
     } else {
       try {
-        const res = await API.post('/api/parking/slots', {
+        const res = await API.post('/api/parking/slots/add', {
           slot_number: newSlotData.slotNumber,
           parking_lot_id: locations.find(l => l.name === newSlotData.location)?.location_id,
           slot_type: 'standard',
-          status: newSlotData.status.toLowerCase(),
-          admin_id: loggedInAdmin.id,
+          created_by: loggedInAdmin.id,
         });
 
-        // Use backend response ID
-        const createdSlot = {
+        setSlots([...slots, {
           ...newSlotData,
           id: res.data.id,
+          status: res.data.status || 'Available',
           lastUpdated: new Date().toISOString(),
-        };
-        setSlots([...slots, createdSlot]);
+        }]);
       } catch (err) {
         console.error('Error adding slot to backend', err);
       }
@@ -110,27 +101,30 @@ const ParkingSlotManagement = () => {
     setShowAddSlotModal(false);
   };
 
+  // Delete a slot
   const handleDeleteSlot = async (slotId) => {
     if (!window.confirm('Are you sure you want to delete this slot?')) return;
     try {
-      await API.delete(`/api/parking/slots/${slotId}`, { params: { admin_id: loggedInAdmin.id } });
+      await API.delete(`/api/parking/slots/${slotId}/delete`);
       setSlots(slots.filter(slot => slot.id !== slotId));
     } catch (err) {
       console.error('Error deleting slot on backend', err);
     }
   };
 
+  // Edit a slot
   const handleEditSlot = (slot) => {
     setEditingSlot(slot);
     setShowAddSlotModal(true);
     setOperationMode(null);
   };
 
+  // Change slot status
   const handleStatusChange = async (slotId, newStatus) => {
     setSlots(slots.map(slot => slot.id === slotId ? { ...slot, status: newStatus } : slot));
     try {
-      await API.put(`/api/parking/slots/${slotId}/status`, null, {
-        params: { status: newStatus.toLowerCase(), admin_id: loggedInAdmin.id },
+      await API.put(`/api/parking/slots/${slotId}/status-update`, null, {
+        params: { status: newStatus.toLowerCase() },
       });
     } catch (err) {
       console.error('Error updating slot status', err);
@@ -144,22 +138,20 @@ const ParkingSlotManagement = () => {
     else handleEditSlot(payload);
   };
 
+  // Add a location
   const handleAddLocation = async (loc) => {
-    // Optimistic UI update
-    const tempLoc = { ...loc, location_id: Date.now() };
-    setLocations(prev => [...prev, tempLoc]);
-
     try {
-      const res = await API.post('/api/parking/locations', { ...loc, admin_id: loggedInAdmin.id });
-      // Replace temporary location with real backend ID
-      setLocations(prev => prev.map(l => (l.location_id === tempLoc.location_id ? { ...l, location_id: res.data.id } : l)));
+      const res = await API.post('/api/locations/create', loc, {
+        headers: { Authorization: `Bearer ${loggedInAdmin.token}` },
+      });
+      setLocations([...locations, res.data]);
     } catch (err) {
       console.error('Error adding location to backend', err);
-      // Rollback if backend fails
-      setLocations(prev => prev.filter(l => l.location_id !== tempLoc.location_id));
     }
+    setShowAddLocationModal(false);
   };
 
+  // Filter slots by location and date
   const filterSlots = () => {
     let filtered = slots;
     if (selectedLocation !== 'All Locations')
@@ -218,7 +210,7 @@ const ParkingSlotManagement = () => {
         <AddLocationModal
           onClose={() => setShowAddLocationModal(false)}
           onAddLocation={handleAddLocation}
-          currentAdmin={loggedInAdmin} // Pass admin info
+          currentAdmin={loggedInAdmin}
         />
       )}
 

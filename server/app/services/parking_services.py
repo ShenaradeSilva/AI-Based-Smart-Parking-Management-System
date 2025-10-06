@@ -1,27 +1,8 @@
 from sqlalchemy.orm import Session
-from ..models.location_model import Location
 from ..models.parkinglot_model import ParkingLot
 from ..models.parkingslot_model import ParkingSlot
 import csv
 from io import StringIO
-
-
-# Locations
-def get_locations(db: Session):
-    return db.query(Location).all()
-
-
-def create_location(db: Session, name: str, address: str, hourly_rate: float = 150.0, created_by: int = None):
-    loc = Location(
-        name=name,
-        address=address,
-        hourly_rate=hourly_rate,
-        created_by=created_by
-    )
-    db.add(loc)
-    db.commit()
-    db.refresh(loc)
-    return loc
 
 
 # Parking Lots
@@ -65,10 +46,11 @@ def update_slot_status(db: Session, slot_id: int, new_status: str):
 def delete_parking_slot(db: Session, slot_id: int):
     slot = db.query(ParkingSlot).filter(ParkingSlot.parking_slot_id == slot_id).first()
     if slot:
+        creator_id = slot.created_by
         db.delete(slot)
         db.commit()
-        return True
-    return False
+        return True, creator_id
+    return False, None
 
 
 # Slot Operations
