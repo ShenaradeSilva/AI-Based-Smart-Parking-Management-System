@@ -237,6 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
         // Update in-memory user data for UI
         UserData.updateUserData(response['user']);
 
+        // **Set the token**
+        UserData.setToken(response['access_token']);
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful')),

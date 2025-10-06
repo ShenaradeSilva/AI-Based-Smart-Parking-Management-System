@@ -14,6 +14,7 @@ import 'notification_screen.dart';
 import '../Models/user_data.dart';
 import 'legal/privacy_policy_screen.dart';
 import 'legal/terms_screen.dart';
+import '../utils/country_codes.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -49,6 +50,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<Offset> _slideAnimation;
 
   bool _pushEnabled = false;
+
+  // Country code variables
+  CountryCode _selectedCountry = CountryCodes.defaultCountry;
+  bool _isPhoneValid = true;
 
   @override
   void initState() {
@@ -117,11 +122,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     final result = await UserService.getProfile();
     if (result['success']) {
       final data = result['data'];
+
+      // Parse existing phone number to extract country code
+      final existingPhone = data['phone'] ?? '';
+      _parseExistingPhoneNumber(existingPhone);
+
       setState(() {
         _userProfile = data;
         _nameController.text = data['name'] ?? '';
         _emailController.text = data['email'] ?? '';
-        _phoneController.text = data['phone'] ?? '';
       });
       _syncVehiclesFromBackend(data);
     } else {
@@ -129,6 +138,30 @@ class _ProfileScreenState extends State<ProfileScreen>
         SnackBar(content: Text(result['message'] ?? 'Failed to load profile')),
       );
     }
+  }
+
+  void _parseExistingPhoneNumber(String phone) {
+    if (phone.isEmpty) {
+      _phoneController.text = '';
+      return;
+    }
+
+    // Try to find matching country code
+    for (final country in CountryCodes.allCountryCodes) {
+      if (phone.startsWith(country.code)) {
+        final phoneWithoutCode = phone.substring(country.code.length);
+        setState(() {
+          _selectedCountry = country;
+          _phoneController.text = phoneWithoutCode;
+        });
+        _validatePhoneNumber(phoneWithoutCode);
+        return;
+      }
+    }
+
+    // If no country code found, use default and set full number
+    _phoneController.text = phone;
+    _validatePhoneNumber(phone);
   }
 
   void _syncVehiclesFromBackend(Map<String, dynamic> data) {
@@ -598,7 +631,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                       label: 'Phone Number',
                       icon: Icons.phone_outlined,
                       controller: _phoneController,
+                      isPhoneField: true,
                     ),
+                    if (!_isPhoneValid &&
+                        _isEditing &&
+                        _phoneController.text.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Phone number should be ${_selectedCountry.digits} digits for ${_selectedCountry.name}',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     _buildVehicleSection(),
                   ],
@@ -615,6 +662,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String label,
     required IconData icon,
     required TextEditingController controller,
+    bool isPhoneField = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,38 +676,149 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: _isEditing ? Colors.white : Colors.grey.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _isEditing
-                  ? primaryColor.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
-          child: TextFormField(
-            controller: controller,
-            enabled: _isEditing,
-            decoration: InputDecoration(
-              prefixIcon: Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: primaryColor, size: 20),
+        if (!isPhoneField)
+          Container(
+            decoration: BoxDecoration(
+              color: _isEditing ? Colors.white : Colors.grey.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isEditing
+                    ? primaryColor.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.2),
+                width: 1.5,
               ),
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            child: TextFormField(
+              controller: controller,
+              enabled: _isEditing,
+              decoration: InputDecoration(
+                prefixIcon: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: primaryColor, size: 20),
+                ),
+                border: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
             ),
           ),
-        ),
+        if (isPhoneField) _buildPhoneNumberField(controller),
       ],
     );
+  }
+
+  Widget _buildPhoneNumberField(TextEditingController controller) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _isEditing ? Colors.white : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _isEditing
+              ? (_isPhoneValid ? primaryColor.withOpacity(0.3) : Colors.red)
+              : Colors.grey.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Country Code Dropdown
+          Container(
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<CountryCode>(
+                value: _selectedCountry,
+                icon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
+                iconSize: 16,
+                elevation: 16,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF2D3748),
+                  fontWeight: FontWeight.w500,
+                ),
+                onChanged: _isEditing
+                    ? (CountryCode? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedCountry = newValue;
+                            _validatePhoneNumber(controller.text);
+                          });
+                        }
+                      }
+                    : null,
+                items: CountryCodes.allCountryCodes
+                    .map<DropdownMenuItem<CountryCode>>((CountryCode country) {
+                  return DropdownMenuItem<CountryCode>(
+                    value: country,
+                    child: Text(
+                      '${country.code}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Phone Icon
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.phone_rounded, color: primaryColor, size: 20),
+          ),
+          const SizedBox(width: 8),
+          // Phone Number Input
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              enabled: _isEditing,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                hintText: 'Phone number',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              onChanged: (value) {
+                _validatePhoneNumber(value);
+              },
+            ),
+          ),
+          if (!_isPhoneValid && _isEditing && controller.text.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Icon(Icons.error_outline, color: Colors.red, size: 20),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _validatePhoneNumber(String value) {
+    if (value.isEmpty) {
+      setState(() {
+        _isPhoneValid = true;
+      });
+      return;
+    }
+
+    // Remove any non-digit characters
+    final digitsOnly = value.replaceAll(RegExp(r'[^\d]'), '');
+
+    setState(() {
+      _isPhoneValid = digitsOnly.length == _selectedCountry.digits;
+    });
   }
 
   Widget _buildVehicleSection() {
@@ -1271,10 +1430,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _navigateToNotifications() {
+    if (UserData.token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User is not logged in')),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const NotificationScreen(),
+        builder: (context) => NotificationScreen(userToken: UserData.token!),
       ),
     );
   }
@@ -1286,7 +1452,23 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _saveInfo() async {
-    // Simply set editing to false and try to save
+    // Validate phone number before saving
+    if (_isEditing && !_isPhoneValid && _phoneController.text.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Please enter a valid phone number for ${_selectedCountry.name}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Combine country code and phone number
+    final fullPhoneNumber = _phoneController.text.isNotEmpty
+        ? '${_selectedCountry.code}${_phoneController.text}'
+        : null;
+
     setState(() {
       _isEditing = false;
     });
@@ -1294,7 +1476,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final result = await UserService.updateProfile(
       name: _nameController.text,
       email: _emailController.text,
-      phone: _phoneController.text,
+      phone: fullPhoneNumber,
     );
 
     if (result['success'] == true) {
@@ -1306,7 +1488,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile updated successfully!')),
+        const SnackBar(content: Text('Profile updated successfully!')),
       );
     } else {
       // If failed, go back to editing mode

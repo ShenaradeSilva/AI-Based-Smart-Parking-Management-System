@@ -311,4 +311,50 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  static Future<List<Map<String, dynamic>>> getList(
+      String endpoint, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = json.decode(response.body);
+      if (decoded is List) {
+        return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+      } else if (decoded is Map && decoded['data'] is List) {
+        return (decoded['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      throw Exception('GET request failed: ${response.statusCode}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> postWithToken(
+      String endpoint, Map<String, dynamic> data, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode(data),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return {};
+      final decoded = json.decode(response.body);
+      return decoded is Map<String, dynamic> ? decoded : {};
+    } else {
+      throw Exception('POST request failed: ${response.statusCode}');
+    }
+  }
 }

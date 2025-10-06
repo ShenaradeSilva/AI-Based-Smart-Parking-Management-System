@@ -41,7 +41,7 @@ app.include_router(parking_router, prefix="/api/parking", tags=["Parking"])
 app.include_router(waitlist_router, prefix="/api/waitlist", tags=["Waitlist"])
 app.include_router(cancellation_router, prefix="/api/cancellations", tags=["Cancellations"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
-app.include_router(notification_router, prefix="/api")
+app.include_router(notification_router)
 app.include_router(user_router)
 app.include_router(dashboard_router)
 

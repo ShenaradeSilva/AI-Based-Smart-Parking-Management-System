@@ -52,30 +52,30 @@ class _DashboardScreenState extends State<DashboardScreen>
     'available': 7
   };
   List<Map<String, dynamic>> get _activeReservations => [
-    {
-      'id': '1',
-      'slotNumber': 'A1',
-      'date': DateTime.now().add(const Duration(days: 1)),
-      'startTime': '10:00',
-      'endTime': '14:00',
-      'price': 20.0,
-      'status': 'Active',
-      'zone': 'A',
-      'location': 'One Galle Face, City Center',
-      'imageAsset': 'assets/locations/OGF.jpg'
-    },
-    {
-      'id': '2',
-      'slotNumber': 'B3',
-      'date': DateTime.now().add(const Duration(days: 2)),
-      'startTime': '13:00',
-      'endTime': '17:00',
-      'status': 'Active',
-      'zone': 'B',
-      'location': 'Marino Mall, Sea Avenue',
-      'imageAsset': 'assets/locations/MC.jpg'
-    }
-  ];
+        {
+          'id': '1',
+          'slotNumber': 'A1',
+          'date': DateTime.now().add(const Duration(days: 1)),
+          'startTime': '10:00',
+          'endTime': '14:00',
+          'price': 20.0,
+          'status': 'Active',
+          'zone': 'A',
+          'location': 'One Galle Face, City Center',
+          'imageAsset': 'assets/locations/OGF.jpg'
+        },
+        {
+          'id': '2',
+          'slotNumber': 'B3',
+          'date': DateTime.now().add(const Duration(days: 2)),
+          'startTime': '13:00',
+          'endTime': '17:00',
+          'status': 'Active',
+          'zone': 'B',
+          'location': 'Marino Mall, Sea Avenue',
+          'imageAsset': 'assets/locations/MC.jpg'
+        }
+      ];
 
   // Fetch real-time weather from Open-Meteo for Colombo by default
   Future<void> _fetchWeather() async {
@@ -117,8 +117,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // Resolve a location image path by checking multiple candidate asset paths.
-  Future<String> _bestLocationImagePath(Map<String, dynamic> reservation) async {
-    final loc = _parseLocation(reservation['location'], name: reservation['locationName'], area: reservation['locationArea']);
+  Future<String> _bestLocationImagePath(
+      Map<String, dynamic> reservation) async {
+    final loc = _parseLocation(reservation['location'],
+        name: reservation['locationName'], area: reservation['locationArea']);
     final name = (loc['name'] ?? '').toLowerCase();
     String inferred = 'CCC.jpg';
     if (name.contains('one galle face')) inferred = 'OGF.jpg';
@@ -160,7 +162,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   String _userInitials() {
     final name = (UserData.name ?? '').trim();
     if (name.isEmpty) return 'U';
-    final parts = name.split(RegExp(r"\s+")).where((p) => p.isNotEmpty).toList();
+    final parts =
+        name.split(RegExp(r"\s+")).where((p) => p.isNotEmpty).toList();
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
@@ -171,7 +174,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     return s.toUpperCase();
   }
 
-  Map<String, String> _parseLocation(dynamic location, {dynamic name, dynamic area}) {
+  Map<String, String> _parseLocation(dynamic location,
+      {dynamic name, dynamic area}) {
     final explicitName = (name ?? '').toString().trim();
     final explicitArea = (area ?? '').toString().trim();
     if (explicitName.isNotEmpty || explicitArea.isNotEmpty) {
@@ -220,7 +224,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+      String label, String value, Color color, IconData icon) {
     return AnimatedBuilder(
       animation: _fadeAnimation,
       builder: (context, child) {
@@ -284,7 +289,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Drawer _buildSidebar(BuildContext context) {
-    final selectedColor = Theme.of(context).colorScheme.primary.withOpacity(0.08);
+    final selectedColor =
+        Theme.of(context).colorScheme.primary.withOpacity(0.08);
     final selectedIconColor = Theme.of(context).colorScheme.primary;
     return Drawer(
       child: SafeArea(
@@ -304,11 +310,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Parking Flow', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Parking Flow',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Text(
                           UserData.name ?? 'Guest',
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 14),
                         ),
                       ],
                     ),
@@ -343,7 +354,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               title: const Text('Search Locations'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationSearchScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const LocationSearchScreen()));
               },
             ),
             ListTile(
@@ -377,7 +391,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MyReservationsScreen(activeReservations: _activeReservations),
+                    builder: (context) => MyReservationsScreen(
+                        activeReservations: _activeReservations),
                   ),
                 );
               },
@@ -391,7 +406,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   context,
                   MaterialPageRoute(
                     builder: (context) => QrCodeScreen(
-                      reservation: _activeReservations.isNotEmpty ? _activeReservations[0] : {},
+                      reservation: _activeReservations.isNotEmpty
+                          ? _activeReservations[0]
+                          : {},
                     ),
                   ),
                 );
@@ -401,10 +418,20 @@ class _DashboardScreenState extends State<DashboardScreen>
               leading: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
               onTap: () {
+                if (UserData.token == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User token is missing')),
+                  );
+                  return;
+                }
+
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        NotificationScreen(userToken: UserData.token!),
+                  ),
                 );
               },
             ),
@@ -493,15 +520,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                               radius: 22,
                               backgroundColor: Colors.white.withOpacity(0.25),
                               foregroundImage: _avatarImageProvider(),
-                              child: const Icon(Icons.person, color: Colors.white),
+                              child:
+                                  const Icon(Icons.person, color: Colors.white),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('$greeting,', style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500)),
-                                  Text(userName, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                  Text('$greeting,',
+                                      style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500)),
+                                  Text(userName,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
@@ -511,7 +547,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 color: Colors.white.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.local_parking_rounded, color: Colors.white, size: 22),
+                              child: const Icon(Icons.local_parking_rounded,
+                                  color: Colors.white, size: 22),
                             ),
                           ],
                         ),
@@ -520,15 +557,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onTap: () {
                             Navigator.of(context).push(
                               PageRouteBuilder(
-                                pageBuilder: (_, animation, __) => ParkingMapScreen(),
+                                pageBuilder: (_, animation, __) =>
+                                    ParkingMapScreen(),
                                 transitionsBuilder: (_, animation, __, child) {
                                   final offsetAnimation = Tween<Offset>(
                                     begin: const Offset(1.0, 0.0),
                                     end: Offset.zero,
-                                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
-                                  return SlideTransition(position: offsetAnimation, child: child);
+                                  ).animate(CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeInOut));
+                                  return SlideTransition(
+                                      position: offsetAnimation, child: child);
                                 },
-                                transitionDuration: const Duration(milliseconds: 350),
+                                transitionDuration:
+                                    const Duration(milliseconds: 350),
                               ),
                             );
                           },
@@ -544,11 +586,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on_rounded, color: Colors.white70, size: 20),
+                                const Icon(Icons.location_on_rounded,
+                                    color: Colors.white70, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Available slots nearby',
-                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 14),
                                 ),
                                 const Spacer(),
                                 Container(
@@ -556,7 +600,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     horizontal: 12,
                                     vertical: 4,
                                   ),
-                                  decoration: BoxDecoration(color: kSuccess, borderRadius: BorderRadius.circular(20)),
+                                  decoration: BoxDecoration(
+                                      color: kSuccess,
+                                      borderRadius: BorderRadius.circular(20)),
                                   child: Text(
                                     '${_parkingStats['available']} available',
                                     style: const TextStyle(
@@ -578,7 +624,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
           ),
           const SizedBox(height: 20),
-          
+
           // Statistics Cards
           Row(
             children: [
@@ -714,7 +760,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return AnimatedBuilder(
       animation: _fadeAnimation,
       builder: (context, child) {
@@ -797,7 +844,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: Icon(
                           (_currentWeatherText ?? 'Clear').contains('Rain')
                               ? Icons.umbrella_rounded
-                              : (_currentWeatherText ?? 'Clear').contains('Cloud')
+                              : (_currentWeatherText ?? 'Clear')
+                                      .contains('Cloud')
                                   ? Icons.cloud_rounded
                                   : Icons.wb_sunny_rounded,
                           color: Colors.amber,
@@ -816,8 +864,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                       const Spacer(),
                       Flexible(
                         child: Text(
-                          DateFormat('EEE, MMM d • h:mm a').format(_lastWeatherUpdated),
-                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          DateFormat('EEE, MMM d • h:mm a')
+                              .format(_lastWeatherUpdated),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           softWrap: false,
@@ -828,7 +878,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _currentTempC != null ? '${_currentTempC!.toStringAsFixed(0)}°C' : '--°C',
+                    _currentTempC != null
+                        ? '${_currentTempC!.toStringAsFixed(0)}°C'
+                        : '--°C',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -849,9 +901,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                       IconButton(
                         tooltip: 'Refresh weather',
                         onPressed: _fetchWeather,
-                        icon: const Icon(Icons.refresh, size: 18, color: Colors.grey),
+                        icon: const Icon(Icons.refresh,
+                            size: 18, color: Colors.grey),
                       ),
-                      Text('Refresh', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      Text('Refresh',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600])),
                       const SizedBox(width: 4),
                     ],
                   ),
@@ -1029,19 +1084,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   height: 48,
                                   color: Colors.grey.withOpacity(0.1),
                                   alignment: Alignment.center,
-                                  child: const Icon(Icons.location_on_rounded, color: Colors.grey, size: 20),
+                                  child: const Icon(Icons.location_on_rounded,
+                                      color: Colors.grey, size: 20),
                                 )
                               : Image.asset(
                                   path,
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stack) => Container(
+                                  errorBuilder: (context, error, stack) =>
+                                      Container(
                                     width: 48,
                                     height: 48,
                                     color: Colors.grey.withOpacity(0.1),
                                     alignment: Alignment.center,
-                                    child: const Icon(Icons.location_on_rounded, color: Colors.grey, size: 20),
+                                    child: const Icon(Icons.location_on_rounded,
+                                        color: Colors.grey, size: 20),
                                   ),
                                 ),
                         );
@@ -1061,7 +1119,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                               );
                               final name = loc['name'] ?? '';
                               return Text(
-                                name.isNotEmpty ? name : 'Slot ${_formatSlot(reservation['slotNumber'])}',
+                                name.isNotEmpty
+                                    ? name
+                                    : 'Slot ${_formatSlot(reservation['slotNumber'])}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -1126,7 +1186,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => QrCodeScreen(reservation: reservation),
+                              builder: (context) =>
+                                  QrCodeScreen(reservation: reservation),
                             ),
                           );
                         },
@@ -1193,12 +1254,22 @@ class _DashboardScreenState extends State<DashboardScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon:
+                  const Icon(Icons.notifications_outlined, color: Colors.white),
               onPressed: () {
+                if (UserData.token == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User is not logged in')),
+                  );
+                  return;
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const NotificationScreen(),
+                    builder: (context) => NotificationScreen(
+                      userToken: UserData.token!,
+                    ),
                   ),
                 );
               },
@@ -1217,7 +1288,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.9), width: 2),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.9),
+                    width: 2,
+                  ),
                 ),
                 child: CircleAvatar(
                   radius: 18,
@@ -1226,7 +1300,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: _avatarImageProvider() == null
                       ? Text(
                           _userInitials(),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700),
                         )
                       : null,
                 ),
@@ -1333,5 +1408,4 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
   }
-    }
-    
+}

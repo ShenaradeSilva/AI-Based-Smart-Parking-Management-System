@@ -1,41 +1,103 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..schemas.notification_schema import NotificationResponse
 from ..services import notification_services
+from ..utils.auth_utils import decode_access_token
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
-
-
-# Dummy auth dependency (replace with real JWT auth)
-def get_current_user():
-    return {"user_id": 1, "role": "admin"}
+router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 
-@router.get("/", response_model=List[NotificationResponse])
-def fetch_notifications(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user["role"] == "admin":
-        return notification_services.get_all_notifications(db)
-    return notification_services.get_user_notifications(db, current_user["user_id"])
+# JWT-based user extractor with debug logging
+def get_current_user(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid token format")
+
+    token = authorization.split(" ")[1]
+
+    # Debug logs
+    print("=== Incoming token ===")
+    print(token)
+
+    payload = decode_access_token(token)
+
+    if payload is None:
+        print("=== Token decode failed ===")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    print("=== Decoded payload ===")
+    print(payload)
+
+    # Fix: support both "user_id" and "sub"
+    user_id = payload.get("user_id") or payload.get("sub")
+    role = payload.get("role")
+
+    if not user_id or not role:
+        raise HTTPException(status_code=401, detail="Token missing user_id or role")
+
+    return {"user_id": int(user_id), "role": role}
+
+
+@router.get("/fetch", response_model=List[NotificationResponse])
+def fetch_notifications(
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user["user_id"]
+    role = current_user["role"]
+
+    if role == "admin":
+        all_notifications = notification_services.get_all_notifications(db)
+        # Admin sees all notifications, but signup/signin only for themselves
+        for notif in all_notifications:
+            if notif.type in ["signup", "signin"] and notif.user_id != user_id:
+                notif.hidden_for_admin = True
+        return all_notifications
+    else:
+        # Driver sees only their own notifications
+        return notification_services.get_user_notifications(db, user_id)
 
 
 @router.post("/{notification_id}/read", response_model=NotificationResponse)
-def mark_as_read(notification_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    notif = notification_services.mark_notification_as_read(db, notification_id)
+def mark_as_read(
+        notification_id: int,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    notif = notification_services.get_notification_by_id(db, notification_id)
     if not notif:
         raise HTTPException(status_code=404, detail="Notification not found")
+
+    if current_user["role"] != "admin" and notif.user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Cannot mark others' notifications as read")
+
+    notif.status = "read"
+    db.commit()
+    db.refresh(notif)
     return notif
 
 
-# Optional: mark all notifications as read for current user
 @router.post("/read-all", response_model=List[NotificationResponse])
-def mark_all_as_read(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    notifs = notification_services.get_user_notifications(db, current_user["user_id"], unread_only=True)
+def mark_all_as_read(
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user["user_id"]
+    role = current_user["role"]
+
+    if role == "admin":
+        notifications = notification_services.get_all_notifications(db)
+    else:
+        notifications = notification_services.get_user_notifications(db, user_id, unread_only=True)
+
     updated = []
-    for n in notifs:
-        n.status = "read"
-        db.commit()
-        db.refresh(n)
-        updated.append(n)
+    for notif in notifications:
+        if role != "admin" and notif.user_id != user_id:
+            continue
+        notif.status = "read"
+        updated.append(notif)
+
+    # Commit once for efficiency
+    db.commit()
     return updated
