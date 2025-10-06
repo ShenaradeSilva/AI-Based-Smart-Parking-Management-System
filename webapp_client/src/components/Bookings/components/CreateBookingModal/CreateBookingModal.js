@@ -30,7 +30,7 @@ const CreateBookingModal = ({ vehicles, locations, bookedSlots, onClose, onSave 
 
   // Prepare vehicle options
   useEffect(() => {
-    setVehicleOptions([...vehicles.map(v => v.plateNumber), 'Register Vehicle']);
+    setVehicleOptions([...vehicles.map(v => v.plate_number || v.plateNumber), 'Register Vehicle']);
   }, [vehicles]);
 
   // Update available slots when location changes
@@ -55,11 +55,11 @@ const CreateBookingModal = ({ vehicles, locations, bookedSlots, onClose, onSave 
     const { name, value } = e.target;
 
     if (name === 'vehicle' && value === 'Register Vehicle') {
-      onClose();                 // close the modal first
-      navigate('vehicle-management'); // relative navigation inside Bookings
+      onClose();
+      navigate('vehicle-management'); // relative navigation
       return;
     }
-    
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -74,7 +74,7 @@ const CreateBookingModal = ({ vehicles, locations, bookedSlots, onClose, onSave 
     setSaving(true);
 
     try {
-      const vehicleId = vehicles.find(v => v.plateNumber === formData.vehicle)?.id;
+      const vehicleId = vehicles.find(v => (v.plate_number || v.plateNumber) === formData.vehicle)?.id;
       if (!vehicleId) {
         setErrorMsg('Selected vehicle must be registered.');
         setSaving(false);
@@ -83,10 +83,10 @@ const CreateBookingModal = ({ vehicles, locations, bookedSlots, onClose, onSave 
 
       const parkingSlotId = formData.slot.replace('Slot ', '');
 
-      const response = await API.post('/reservations', {
+      const response = await API.post('/api/reservations/create', {
         date: formData.date,
         start_time: formData.time,
-        end_time: formData.time,
+        end_time: formData.time, // adjust if needed
         parking_slot_id: parkingSlotId,
         vehicle_id: vehicleId,
         status: formData.status,
@@ -95,30 +95,26 @@ const CreateBookingModal = ({ vehicles, locations, bookedSlots, onClose, onSave 
         payment_method: formData.paymentMethod,
       });
 
-      const savedBooking = response.data;
+      const savedReservation = response.data;
 
       onSave({
-        id: savedBooking.reservation_id,
+        id: savedReservation.reservation_id,
         location: formData.location,
         slot: formData.slot,
-        date: savedBooking.date,
-        time: savedBooking.start_time,
-        duration: savedBooking.duration || Number(formData.duration),
-        status: savedBooking.status,
+        date: savedReservation.date,
+        time: savedReservation.start_time,
+        duration: savedReservation.duration || Number(formData.duration),
+        status: savedReservation.status,
         vehicle: formData.vehicle,
-        amount: savedBooking.amount || formData.amount,
-        paymentMethod: savedBooking.payment_method || formData.paymentMethod,
-        paymentStatus: savedBooking.payment_status || 'Pending',
-        bookingReference: `REF${savedBooking.reservation_id}`,
+        amount: savedReservation.amount || formData.amount,
+        paymentMethod: savedReservation.payment_method || formData.paymentMethod,
+        paymentStatus: savedReservation.payment_status || 'Pending',
+        bookingReference: `REF${savedReservation.reservation_id}`,
       });
 
       onClose();
     } catch (err) {
-      if (err.response?.data?.detail) {
-        setErrorMsg(err.response.data.detail);
-      } else {
-        setErrorMsg('An unexpected error occurred while creating the booking.');
-      }
+      setErrorMsg(err.response?.data?.detail || 'An unexpected error occurred while creating the booking.');
     } finally {
       setSaving(false);
     }

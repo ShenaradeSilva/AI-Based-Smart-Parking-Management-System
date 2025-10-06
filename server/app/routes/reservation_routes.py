@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/reservations", tags=["Reservations"])
 
 
 # GET all reservations (list)
-@router.get("/", response_model=List[ReservationResponse])
+@router.get("/list", response_model=List[ReservationResponse])
 def list_reservations(db: Session = Depends(get_db)):
     reservations = reservation_services.get_all_reservations(db)
     response = []
@@ -22,7 +22,7 @@ def list_reservations(db: Session = Depends(get_db)):
 
 
 # GET reservation by ID (details)
-@router.get("/{reservation_id}", response_model=ReservationResponse)
+@router.get("/get/{reservation_id}", response_model=ReservationResponse)
 def get_reservation(reservation_id: int, db: Session = Depends(get_db)):
     reservation = reservation_services.get_reservation(db, reservation_id)
     if not reservation:
@@ -33,7 +33,7 @@ def get_reservation(reservation_id: int, db: Session = Depends(get_db)):
 
 
 # POST create reservation
-@router.post("/", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/create", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 def create_reservation(reservation: ReservationCreate, db: Session = Depends(get_db)):
     r = reservation_services.create_reservation(db, reservation)
     r_dict = ReservationResponse.from_orm(r).dict()
@@ -51,7 +51,7 @@ def create_reservation(reservation: ReservationCreate, db: Session = Depends(get
 
 
 # PUT update status (e.g., cancel)
-@router.put("/{reservation_id}/status", response_model=ReservationResponse)
+@router.put("/{reservation_id}/update-status", response_model=ReservationResponse)
 def update_reservation_status(reservation_id: int, status: ReservationUpdateStatus, db: Session = Depends(get_db)):
     reservation = reservation_services.update_reservation_status(db, reservation_id, status)
     if not reservation:
@@ -71,7 +71,7 @@ def update_reservation_status(reservation_id: int, status: ReservationUpdateStat
 
 
 # DELETE reservation (cancel)
-@router.delete("/{reservation_id}", response_model=ReservationResponse)
+@router.delete("/{reservation_id}/delete", response_model=ReservationResponse)
 def cancel_reservation(reservation_id: int, db: Session = Depends(get_db)):
     reservation = reservation_services.delete_reservation(db, reservation_id)
     if not reservation:

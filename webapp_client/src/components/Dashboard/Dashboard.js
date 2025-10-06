@@ -44,18 +44,14 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(dashboardDataFallback);
   const [notifications, setNotifications] = useState(notificationsDataMock);
 
-  // ------------------------
   // Authentication check
-  // ------------------------
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) navigate("/signin");
     else setIsAuthenticated(true);
   }, [navigate]);
 
-  // ------------------------
   // Active section based on URL
-  // ------------------------
   useEffect(() => {
     const path = location.pathname;
     if (path.includes("/analytics-vehicle")) setActiveSection("analytics-vehicle");
@@ -73,9 +69,7 @@ const Dashboard = () => {
     else if (path === "/dashboard") setActiveSection("dashboard");
   }, [location]);
 
-  // ------------------------
   // Fetch dashboard & notifications
-  // ------------------------
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -92,7 +86,7 @@ const Dashboard = () => {
       try {
         const res = await API.get("/api/notifications/");
         if (res.status === 200 && res.data) {
-          // ✅ FIXED notification time formatting
+          // FIXED notification time formatting
           const mapped = res.data.map((notif) => {
             const createdAt = new Date(notif.created_at);
             const formattedTime = new Date(notif.created_at).toLocaleString(undefined, {
@@ -103,7 +97,7 @@ const Dashboard = () => {
               minute: "2-digit",
               second: "2-digit",
               hour12: true,
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // 👈 ensures local
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ensures local
             });
 
 
@@ -117,7 +111,7 @@ const Dashboard = () => {
                   ? "Security Alert"
                   : "Notification",
               content: notif.message,
-              time: formattedTime, // ✅ Consistent & readable format
+              time: formattedTime, //Consistent & readable format
               read: notif.status === "read",
             };
           });
@@ -135,9 +129,7 @@ const Dashboard = () => {
     fetchNotifications();
   }, []);
 
-  // ------------------------
-  // Handlers
-  // ------------------------
+  // Handlers-
   const handleViewVehicles = () => setShowVehiclesModal(true);
   const handleViewOccupancyReport = () => setShowOccupancyReport(true);
 

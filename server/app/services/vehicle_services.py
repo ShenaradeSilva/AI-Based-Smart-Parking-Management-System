@@ -2,10 +2,24 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from ..models.vehicle_model import Vehicle
 from ..schemas.vehicle_schema import VehicleCreate, VehicleUpdate
+from sqlalchemy.orm import joinedload
+
+from sqlalchemy.orm import joinedload
 
 
 def get_all_vehicles(db: Session):
-    return db.query(Vehicle).all()
+    vehicles = db.query(Vehicle).options(joinedload(Vehicle.user)).all()
+    result = []
+    for v in vehicles:
+        result.append({
+            "vehicle_id": v.vehicle_id,
+            "plate_number": v.plate_number,
+            "type": v.type,
+            "user_id": v.user_id,
+            "owner": v.user.name if v.user else "N/A",  # populate owner
+            "created_at": v.created_at
+        })
+    return result
 
 
 def get_vehicle_by_id(vehicle_id: int, db: Session):
@@ -70,8 +84,9 @@ def get_vehicles_for_csv(db: Session):
     for v in vehicles:
         csv_list.append({
             "plate_number": v.plate_number,
-            "owner": v.owner,
+            "owner": v.owner,  # now exists
             "vehicle_type": v.type,
-            "registered_date": v.registered_date
+            "registered_date": v.created_at
         })
     return csv_list
+

@@ -7,11 +7,8 @@ import BookingsList from './components/BookingsList/BookingsList';
 import BookingModal from './components/BookingModal/BookingModal';
 import CreateBookingModal from './components/CreateBookingModal/CreateBookingModal';
 import HeaderPages from '../Common/HeaderPages';
-import { bookings as generateBookings } from '../../data/bookings'; // mock bookings
-import vehiclesData from '../../data/vehiclesData'; // mock vehicles
 import API from '../../api/axios'; // Axios instance for backend
 
-const USE_BACKEND = true; // Toggle backend integration
 const HOURLY_RATE = 150; // LKR/hour
 
 const Bookings = () => {
@@ -24,56 +21,41 @@ const Bookings = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [locations, setLocations] = useState([]);
-  const [vehicles, setVehicles] = useState(vehiclesData);
+  const [vehicles, setVehicles] = useState([]);
 
-  // --- Helper function (renamed from useMockData) ---
-  const loadMockData = () => {
-    const data = generateBookings();
-    setBookings(data);
-    setFilteredBookings(data);
-    setLocations([...new Set(data.map(b => b.location))]);
-    setVehicles(vehiclesData);
-    setLoading(false);
-  };
-
-  // --- Fetch data (backend or mock) ---
+  // --- Fetch data from backend ---
   useEffect(() => {
     const fetchData = async () => {
-      if (USE_BACKEND) {
-        try {
-          const [resBookings, resVehicles] = await Promise.all([
-            API.get('/reservations'),
-            API.get('/vehicles'),
-          ]);
+      try {
+        const [resBookings, resVehicles] = await Promise.all([
+          API.get('/api/reservations/list'),
+          API.get('/vehicles'),
+        ]);
 
-          const mappedBookings = resBookings.data.map(b => ({
-            id: b.reservation_id,
-            location: b.parking_slot?.location_name || `Location ${b.parking_slot_id}`,
-            slot: b.parking_slot?.slot_number || b.parking_slot_id,
-            date: b.date,
-            time: b.start_time,
-            duration: b.duration || 1,
-            status: b.status,
-            vehicle: b.vehicle?.plate_number || 'N/A',
-            amount: b.amount || HOURLY_RATE * (b.duration || 1),
-            paymentMethod: b.payment_method || 'Cash',
-            paymentStatus: b.payment_status || 'Pending',
-            bookingReference: `REF${b.reservation_id}`,
-          }));
+        const mappedBookings = resBookings.data.map(b => ({
+          id: b.reservation_id,
+          location: b.parking_slot?.location_name || `Location ${b.parking_slot_id}`,
+          slot: b.parking_slot?.slot_number || b.parking_slot_id,
+          date: b.date,
+          time: b.start_time,
+          duration: b.duration || 1,
+          status: b.status,
+          vehicle: b.vehicle?.plate_number || 'N/A',
+          amount: b.amount || HOURLY_RATE * (b.duration || 1),
+          paymentMethod: b.payment_method || 'Cash',
+          paymentStatus: b.payment_status || 'Pending',
+          bookingReference: `REF${b.reservation_id}`,
+        }));
 
-          setBookings(mappedBookings);
-          setFilteredBookings(mappedBookings);
-          setLocations([...new Set(mappedBookings.map(b => b.location))]);
-
-          setVehicles(resVehicles.data.length ? resVehicles.data : vehiclesData);
-        } catch (err) {
-          console.error('Error fetching backend data:', err);
-          loadMockData(); // ✅ renamed function
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        loadMockData();
+        setBookings(mappedBookings);
+        setFilteredBookings(mappedBookings);
+        setLocations([...new Set(mappedBookings.map(b => b.location))]);
+        setVehicles(resVehicles.data);
+      } catch (err) {
+        console.error('Error fetching backend data:', err);
+        alert('Failed to fetch reservations from backend');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -109,16 +91,12 @@ const Bookings = () => {
   const handleCancelBooking = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this reservation?')) return;
 
-    if (USE_BACKEND) {
-      try {
-        await API.delete(`/api/reservations/${id}`);
-        setBookings(prev => prev.filter(b => b.id !== id));
-      } catch (err) {
-        console.error('Failed to cancel booking:', err);
-        alert('Failed to cancel reservation on backend.');
-      }
-    } else {
+    try {
+      await API.delete(`/api/reservations/${id}/delete`);
       setBookings(prev => prev.filter(b => b.id !== id));
+    } catch (err) {
+      console.error('Failed to cancel booking:', err);
+      alert('Failed to cancel reservation on backend.');
     }
   };
 
@@ -136,43 +114,38 @@ const Bookings = () => {
     const durationNum = Number(newBooking.duration) || 0;
     newBooking.amount = durationNum * HOURLY_RATE;
 
-    if (USE_BACKEND) {
-      try {
-        const res = await API.post('/reservations', {
-          date: newBooking.date,
-          start_time: newBooking.time,
-          end_time: newBooking.time, // adjust if needed
-          parking_slot_id: newBooking.slot.replace('Slot ', ''),
-          vehicle_id: vehicles.find(v => v.plateNumber === newBooking.vehicle)?.id,
-          status: 'Upcoming',
-          duration: durationNum,
-          amount: newBooking.amount,
-          payment_method: newBooking.paymentMethod,
-        });
+    try {
+      const res = await API.post('/api/reservations/create', {
+        date: newBooking.date,
+        start_time: newBooking.time,
+        end_time: newBooking.time, // adjust if needed
+        parking_slot_id: newBooking.slot.replace('Slot ', ''),
+        vehicle_id: vehicles.find(v => v.plateNumber === newBooking.vehicle)?.id,
+        status: 'Upcoming',
+        duration: durationNum,
+        amount: newBooking.amount,
+        payment_method: newBooking.paymentMethod,
+      });
 
-        const b = res.data;
-        setBookings(prev => [...prev, {
-          id: b.reservation_id,
-          location: newBooking.location,
-          slot: newBooking.slot,
-          date: b.date,
-          time: b.start_time,
-          duration: b.duration || 1,
-          status: b.status,
-          vehicle: newBooking.vehicle,
-          amount: b.amount || newBooking.amount,
-          paymentMethod: b.payment_method || 'Cash',
-          paymentStatus: b.payment_status || 'Pending',
-          bookingReference: `REF${b.reservation_id}`,
-        }]);
-        setShowCreateModal(false);
-      } catch (err) {
-        console.error('Failed to create reservation:', err);
-      }
-    } else {
-      const bookingWithId = { ...newBooking, id: bookings.length + 1 };
-      setBookings(prev => [...prev, bookingWithId]);
+      const b = res.data;
+      setBookings(prev => [...prev, {
+        id: b.reservation_id,
+        location: newBooking.location,
+        slot: newBooking.slot,
+        date: b.date,
+        time: b.start_time,
+        duration: b.duration || 1,
+        status: b.status,
+        vehicle: newBooking.vehicle,
+        amount: b.amount || newBooking.amount,
+        paymentMethod: b.payment_method || 'Cash',
+        paymentStatus: b.payment_status || 'Pending',
+        bookingReference: `REF${b.reservation_id}`,
+      }]);
       setShowCreateModal(false);
+    } catch (err) {
+      console.error('Failed to create reservation:', err);
+      alert('Failed to create reservation on backend.');
     }
   };
 

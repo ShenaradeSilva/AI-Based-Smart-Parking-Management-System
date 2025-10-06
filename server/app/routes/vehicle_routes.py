@@ -16,19 +16,19 @@ router = APIRouter(prefix="/api/vehicles", tags=["Vehicles"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-@router.get("/", response_model=List[VehicleOut])
+@router.get("/list", response_model=List[VehicleOut])
 def list_vehicles(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_payload = decode_access_token(token)
     return vehicle_services.get_all_vehicles(db)
 
 
-@router.get("/{vehicle_id}", response_model=VehicleOut)
+@router.get("/{vehicle_id}/get", response_model=VehicleOut)
 def get_vehicle(vehicle_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_payload = decode_access_token(token)
     return vehicle_services.get_vehicle_by_id(vehicle_id, db)
 
 
-@router.post("/", response_model=VehicleOut, status_code=status.HTTP_201_CREATED)
+@router.post("/create", response_model=VehicleOut, status_code=status.HTTP_201_CREATED)
 def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_payload = decode_access_token(token)
     new_vehicle = vehicle_services.create_vehicle(vehicle, db)
@@ -44,7 +44,7 @@ def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db), token:
     return new_vehicle
 
 
-@router.put("/{vehicle_id}", response_model=VehicleOut)
+@router.put("/{vehicle_id}/update", response_model=VehicleOut)
 def update_vehicle(vehicle_id: int, data: VehicleUpdate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_payload = decode_access_token(token)
     updated_vehicle = vehicle_services.update_vehicle(vehicle_id, data, db)
@@ -60,7 +60,7 @@ def update_vehicle(vehicle_id: int, data: VehicleUpdate, db: Session = Depends(g
     return updated_vehicle
 
 
-@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{vehicle_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
 def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user_payload = decode_access_token(token)
     vehicle = vehicle_services.get_vehicle_by_id(vehicle_id, db)

@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { CloseIcon } from "../../../Icons/Icons";
 import API from "../../../../api/axios";
-import vehiclesData from "../../../../data/vehiclesData";
 import "./Modals.css";
 
 const RegisteredVehiclesModal = ({ onClose }) => {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const res = await API.get("/api/vehicles"); // backend endpoint
-        setVehicles(res.data);
+        const res = await API.get("/api/vehicles/list"); // backend endpoint
+        setVehicles(res.data); // only use backend data
       } catch (err) {
-        console.error("Failed to fetch vehicles, using mock data", err);
-        setVehicles(vehiclesData); // fallback to mock
+        console.error("Failed to fetch vehicles from backend", err);
+        setError("Failed to load vehicles. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -36,6 +36,10 @@ const RegisteredVehiclesModal = ({ onClose }) => {
         <div className="modal-body">
           {loading ? (
             <p>Loading vehicles...</p>
+          ) : error ? (
+            <p className="error">{error}</p>
+          ) : vehicles.length === 0 ? (
+            <p>No registered vehicles found.</p>
           ) : (
             <table className="drivers-table">
               <thead>
@@ -53,7 +57,7 @@ const RegisteredVehiclesModal = ({ onClose }) => {
                     <td>{v.vehicle_id || v.id}</td>
                     <td>{v.plate_number || v.plateNumber}</td>
                     <td>{v.type}</td>
-                    <td>{v.user?.name || v.owner || "N/A"}</td>
+                    <td>{v.owner}</td>
                     <td>{v.created_at?.split("T")[0] || v.registeredDate}</td>
                   </tr>
                 ))}

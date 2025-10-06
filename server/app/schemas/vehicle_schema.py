@@ -19,10 +19,14 @@ class VehicleUpdate(BaseModel):
     user_id: Optional[int] = None
 
 
-class VehicleOut(VehicleBase):
+class VehicleOut(BaseModel):
     vehicle_id: int
+    plate_number: str
+    type: str
+    user_id: int
+    owner: str  # <-- add this
     created_at: datetime
     is_primary: bool = False
 
     class Config:
-        from_attributes = True
+        orm_mode = True
