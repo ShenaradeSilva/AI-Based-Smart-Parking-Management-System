@@ -49,9 +49,6 @@ const SlotConfiguration = ({
       <div className="section-header">
         <h2>Slot Configuration</h2>
         <div className="action-buttons">
-          <button className="add-button" onClick={onAddSlot}>
-            <AddIcon /> Add Slot
-          </button>
           <button className="add-button" onClick={onAddLocation}>
             <AddIcon /> Add Location
           </button>

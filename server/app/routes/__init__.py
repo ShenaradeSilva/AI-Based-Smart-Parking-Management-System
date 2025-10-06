@@ -1,5 +1,6 @@
 from .contact_routes import router as contact_router
 from .auth_routes import router as auth_router
+from .location_routes import router as location_router
 from .qr_routes import router as qr_router
 from .reservation_routes import router as reservation_router
 from .parking_routes import router as parking_router

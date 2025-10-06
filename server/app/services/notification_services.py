@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from ..models.notification_model import Notification, NotificationType, NotificationStatus
 from typing import List
+from sqlalchemy import not_, or_
 
 
 def get_all_notifications(db: Session) -> List[Notification]:

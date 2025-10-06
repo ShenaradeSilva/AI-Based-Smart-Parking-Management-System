@@ -15,7 +15,7 @@ const Notifications = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await API.get('/api/notifications/'); // Updated to match backend
+        const response = await API.get('/api/notifications/fetch'); // Updated to match backend
         // Transform backend response to frontend structure
         const backendData = response.data.map((notif) => ({
           id: notif.id,

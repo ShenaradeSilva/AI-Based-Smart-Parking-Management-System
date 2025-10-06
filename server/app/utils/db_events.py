@@ -14,6 +14,7 @@ def setup_database_events():
     from ..models.usersession_model import UserSession
     from ..models.vehicle_model import Vehicle
     from ..models.notification_model import Notification
+    from ..models.location_model import Location
 
     tracked_models = [User, UserSession, Vehicle]
 

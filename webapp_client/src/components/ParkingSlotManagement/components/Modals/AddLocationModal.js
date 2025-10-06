@@ -6,12 +6,18 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
   const [newLocation, setNewLocation] = useState({
     name: '',
     address: '',
-    totalSlots: 0
+    totalSlots: 0,
+    ratePerHour: 0, // <-- new field
   });
 
   const handleSubmit = async () => {
-    if (!newLocation.name?.trim() || !newLocation.address?.trim() || newLocation.totalSlots <= 0) {
-      alert('Please fill all fields and ensure total slots is greater than 0.');
+    if (
+      !newLocation.name?.trim() ||
+      !newLocation.address?.trim() ||
+      newLocation.totalSlots <= 0 ||
+      newLocation.ratePerHour <= 0
+    ) {
+      alert('Please fill all fields and ensure total slots and rate per hour are greater than 0.');
       return;
     }
 
@@ -23,20 +29,21 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
     const payload = {
       name: newLocation.name.trim(),
       address: newLocation.address.trim(),
-      total_slots: Number(newLocation.totalSlots)
+      total_slots: Number(newLocation.totalSlots),
+      rate_per_hour: Number(newLocation.ratePerHour), // <-- included in payload
     };
 
     try {
       const res = await API.post(`/parking/locations?admin_id=${currentAdmin.id}`, payload);
       
-      // Only update UI if backend succeeds
       if (res.data?.id) {
         if (typeof onAddLocation === 'function') {
           onAddLocation({
             id: res.data.id,
             name: payload.name,
             address: payload.address,
-            totalSlots: payload.total_slots
+            totalSlots: payload.total_slots,
+            ratePerHour: payload.rate_per_hour, // <-- updated here
           });
         }
       }
@@ -45,7 +52,7 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
       alert(err.response?.data?.detail || 'Failed to add location to backend.');
     }
 
-    setNewLocation({ name: '', address: '', totalSlots: 0 });
+    setNewLocation({ name: '', address: '', totalSlots: 0, ratePerHour: 0 });
     onClose();
   };
 
@@ -87,6 +94,19 @@ const AddLocationModal = ({ onClose, onAddLocation, currentAdmin }) => {
                 setNewLocation({ ...newLocation, totalSlots: Number(e.target.value) || 0 })
               }
               placeholder="Enter total slots"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Rate per Hour (LKR)</label>
+            <input
+              type="number"
+              min="1"
+              value={newLocation.ratePerHour}
+              onChange={(e) =>
+                setNewLocation({ ...newLocation, ratePerHour: Number(e.target.value) || 0 })
+              }
+              placeholder="Enter rate per hour"
               required
             />
           </div>

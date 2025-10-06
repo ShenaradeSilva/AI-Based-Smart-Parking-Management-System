@@ -49,11 +49,16 @@ def fetch_notifications(
 
     if role == "admin":
         all_notifications = notification_services.get_all_notifications(db)
-        # Admin sees all notifications, but signup/signin only for themselves
+        filtered_notifications = []
         for notif in all_notifications:
-            if notif.type in ["signup", "signin"] and notif.user_id != user_id:
-                notif.hidden_for_admin = True
-        return all_notifications
+            # Include signup/signin only if it belongs to this admin
+            if notif.type in ["signup", "signin"]:
+                if notif.user_id == user_id:
+                    filtered_notifications.append(notif)
+            else:
+                # Include all other notifications for admin
+                filtered_notifications.append(notif)
+        return filtered_notifications
     else:
         # Driver sees only their own notifications
         return notification_services.get_user_notifications(db, user_id)
